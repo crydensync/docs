@@ -1,0 +1,776 @@
+/* =========================
+   DESIGN TOKENS
+========================= */
+
+:root {
+
+  --primary: #6366f1;
+  --secondary: #10b981;
+  --accent: #f59e0b;
+
+  --dark: #1f2937;
+  --light: #f9fafb;
+
+  --bg: #ffffff;
+  --text: #111827;
+  --border: #e5e7eb;
+
+  --sidebar-width: 260px;
+
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+}
+
+
+/* =========================
+   DARK MODE
+========================= */
+
+[data-theme="dark"] {
+
+  --bg: #111827;
+  --text: #f3f4f6;
+  --border: #374151;
+
+}
+
+
+/* =========================
+   RESET
+========================= */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+
+  display: flex;
+  min-height: 100vh;
+
+}
+
+
+/* =========================
+   SIDEBAR
+========================= */
+
+.sidebar {
+
+  width: var(--sidebar-width);
+  height: 100vh;
+
+  position: fixed;
+  left: 0;
+  top: 0;
+
+  background: var(--light);
+
+  border-right: 1px solid var(--border);
+
+  padding: 24px;
+
+  overflow-y: auto;
+
+}
+
+[data-theme="dark"] .sidebar {
+  background: #020617;
+}
+
+.logo {
+
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 25px;
+
+}
+
+
+.nav {
+
+  list-style: none;
+  font-size: 14px;
+
+}
+
+.nav li {
+
+  margin-bottom: 8px;
+
+}
+
+.nav a {
+
+  text-decoration: none;
+  color: var(--text);
+
+  padding: 6px 8px;
+  display: block;
+
+  border-radius: 6px;
+
+}
+
+.nav a:hover {
+
+  background: rgba(99,102,241,0.1);
+
+}
+
+.nav-section {
+
+  font-weight: 600;
+  margin-top: 20px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  opacity: .6;
+
+}
+
+
+/* =========================
+   MAIN AREA
+========================= */
+
+.main {
+
+  margin-left: var(--sidebar-width);
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.header {
+
+  height: 64px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 24px;
+
+  border-bottom: 1px solid var(--border);
+
+  background: var(--bg);
+
+  position: sticky;
+  top: 0;
+
+  z-index: 100;
+
+}
+
+
+/* =========================
+   SEARCH INPUT
+========================= */
+
+#searchInput {
+
+  width: 260px;
+
+  padding: 8px 12px;
+
+  border-radius: 6px;
+
+  border: 1px solid var(--border);
+
+  font-size: 14px;
+
+  background: var(--bg);
+  color: var(--text);
+
+}
+
+
+/* =========================
+   THEME BUTTON
+========================= */
+
+#themeToggle {
+
+  padding: 8px 14px;
+
+  border: none;
+  border-radius: 6px;
+
+  background: var(--primary);
+  color: white;
+
+  cursor: pointer;
+
+  font-size: 14px;
+
+}
+
+#themeToggle:hover {
+
+  opacity: .9;
+
+}
+
+
+/* =========================
+   CONTENT AREA
+========================= */
+
+.content {
+
+  max-width: 860px;
+
+  padding: 40px 32px;
+
+  line-height: 1.7;
+
+}
+
+
+/* headings */
+
+h1 {
+
+  font-size: 36px;
+  margin-bottom: 20px;
+
+}
+
+h2 {
+
+  margin-top: 40px;
+  margin-bottom: 14px;
+
+  font-size: 24px;
+
+}
+
+h3 {
+
+  margin-top: 24px;
+  margin-bottom: 10px;
+
+}
+
+
+/* lists */
+
+ul, ol {
+
+  margin-left: 22px;
+  margin-top: 10px;
+
+}
+
+li {
+
+  margin-bottom: 6px;
+
+}
+
+
+/* =========================
+   CODE BLOCKS
+========================= */
+
+pre {
+
+  background: #0f172a;
+
+  color: #e2e8f0;
+
+  padding: 18px;
+
+  border-radius: 8px;
+
+  overflow-x: auto;
+
+  margin-top: 14px;
+  margin-bottom: 24px;
+
+  font-family: var(--font-mono);
+  font-size: 14px;
+
+  position: relative;
+
+}
+
+code {
+
+  font-family: var(--font-mono);
+
+}
+
+
+/* =========================
+   COPY BUTTON
+========================= */
+
+.copy-btn {
+
+  position: absolute;
+
+  top: 10px;
+  right: 10px;
+
+  border: none;
+
+  background: var(--primary);
+  color: white;
+
+  padding: 4px 10px;
+
+  font-size: 12px;
+
+  border-radius: 6px;
+
+  cursor: pointer;
+
+}
+
+.copy-btn:hover {
+
+  opacity: .9;
+
+}
+
+
+/* =========================
+   SEARCH RESULTS
+========================= */
+
+#searchResults {
+
+  position: absolute;
+
+  top: 60px;
+  left: 24px;
+
+  background: var(--bg);
+
+  border: 1px solid var(--border);
+
+  width: 260px;
+
+  list-style: none;
+
+  border-radius: 6px;
+
+  overflow: hidden;
+
+}
+
+#searchResults li {
+
+  padding: 10px;
+
+  cursor: pointer;
+
+}
+
+#searchResults li:hover {
+
+  background: var(--primary);
+  color: white;
+
+}
+
+
+/* =========================
+   FOOTER NOTE
+========================= */
+
+.footer-note {
+
+  margin-top: 20px;
+  font-size: 14px;
+  opacity: .7;
+
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 900px) {
+
+  .sidebar {
+
+    position: absolute;
+    transform: translateX(-100%);
+    transition: 0.3s;
+
+  }
+
+  .sidebar.active {
+
+    transform: translateX(0);
+
+  }
+
+  .main {
+
+    margin-left: 0;
+
+  }
+
+  .content {
+
+    padding: 30px 20px;
+
+  }
+
+}
+
+/* code block container */
+
+.code-block{
+  position: relative;
+}
+
+/* copy button */
+
+.copy-btn{
+
+  position: absolute;
+  top: 10px;
+  right: 10px;
+
+  border: none;
+  background: transparent;
+
+  cursor: pointer;
+
+  color: #9ca3af;
+
+  padding: 4px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: 0.2s;
+}
+
+.copy-btn:hover{
+  color: #6366f1;
+}
+
+/* icons */
+
+.copy-icon,
+.check-icon{
+  position: absolute;
+  transition: 0.25s ease;
+}
+
+/* hidden state */
+
+.check-icon{
+  opacity: 0;
+  transform: scale(.5);
+}
+
+/* active state */
+
+.copy-btn.copied .copy-icon{
+  opacity: 0;
+  transform: scale(.5);
+}
+
+.copy-btn.copied .check-icon{
+  opacity: 1;
+  transform: scale(1);
+  color: #10b981;
+}
+
+/* =========================
+   CODE BLOCK
+========================= */
+
+pre{
+  position: relative;
+}
+
+/* =========================
+   COPY BUTTON
+========================= */
+
+.copy-btn{
+
+  position: absolute;
+  top: 10px;
+  right: 12px;
+
+  border: none;
+  background: transparent;
+
+  cursor: pointer;
+
+  color: #9ca3af;
+
+  padding: 4px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: 0.2s ease;
+}
+
+.copy-btn:hover{
+  color: var(--primary);
+}
+
+/* icons */
+
+.copy-icon,
+.check-icon{
+  position: absolute;
+  transition: 0.25s ease;
+}
+
+/* hidden check icon */
+
+.check-icon{
+  opacity: 0;
+  transform: scale(.5);
+}
+
+/* copied state */
+
+.copy-btn.copied .copy-icon{
+  opacity: 0;
+  transform: scale(.5);
+}
+
+.copy-btn.copied .check-icon{
+  opacity: 1;
+  transform: scale(1);
+  color: var(--secondary);
+}
+
+
+/* =========================
+   COPIED TOOLTIP
+========================= */
+
+.copy-btn::after{
+
+  content: "Copied!";
+
+  position: absolute;
+
+  top: 22px;
+  right: 0;
+
+  font-size: 12px;
+
+  background: var(--dark);
+  color: white;
+
+  padding: 3px 8px;
+  border-radius: 5px;
+
+  opacity: 0;
+  pointer-events: none;
+
+  transform: translateY(5px);
+
+  transition: 0.2s ease;
+
+}
+
+.copy-btn.copied::after{
+
+  opacity: 1;
+  transform: translateY(0);
+
+}
+
+/* =========================
+   THEME TOGGLE ICON
+========================= */
+
+#themeToggle{
+
+  border: none;
+  background: transparent;
+
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: var(--text);
+
+  position: relative;
+
+  width: 32px;
+  height: 32px;
+
+}
+
+
+/* icons */
+
+.theme-icon{
+
+  position: absolute;
+
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s ease;
+
+}
+
+
+/* default state (light mode) */
+
+.sun-icon{
+  opacity: 0;
+  transform: rotate(-90deg) scale(.6);
+}
+
+.moon-icon{
+  opacity: 1;
+  transform: rotate(0) scale(1);
+}
+
+
+/* dark mode */
+
+[data-theme="dark"] .sun-icon{
+  opacity: 1;
+  transform: rotate(0) scale(1);
+}
+
+[data-theme="dark"] .moon-icon{
+  opacity: 0;
+  transform: rotate(90deg) scale(.6);
+}
+
+/* =========================
+   CODE BLOCK STYLE
+========================= */
+
+/* =========================
+   CODE BLOCK BASE
+========================= */
+
+/* =========================
+   CODE BLOCK BASE
+========================= */
+
+pre{
+
+  position: relative;
+
+  padding: 42px 20px 20px 20px;
+
+  border-radius: 8px;
+
+  overflow-x: auto;
+
+  margin: 20px 0;
+
+  font-family: var(--font-mono);
+
+  background: #1f2937; /* dark grey card */
+  color: #f9fafb;
+
+}
+
+
+/* light mode */
+
+/* [data-theme="light"] pre{
+  background: #f3f4f6;
+  color: #111827;
+} */
+
+/* dark mode */
+
+/* [data-theme="dark"] pre{
+  background: #1f2937;
+  color: #f9fafb;
+} */
+
+/* vertical code bar */
+
+/* =========================
+   CODE WINDOW HEADER
+========================= */
+
+/* code window header */
+
+pre::before{
+
+  content: "";
+
+  position: absolute;
+
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: 34px;
+
+  background: #374151; /* darker than block */
+
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+
+}
+
+/* darker in dark mode */
+/* [data-theme="dark"] pre::before{
+  background: #374151;
+} */
+
+
+/* circles container */
+
+/* =========================
+   MAC STYLE CIRCLES
+========================= */
+
+pre::after{
+
+  content: "";
+
+  position: absolute;
+
+  top: 11px;
+  left: 14px;
+
+  width: 10px;
+  height: 10px;
+
+  border-radius: 50%;
+
+  background: #ef4444;
+
+  box-shadow:
+    16px 0 #f59e0b,
+    32px 0 #10b981;
+
+}
+
