@@ -98,55 +98,40 @@
 
 <section>
 
-<h1>CrydenSync Documentation Website</h1>
+<h1>CrydenSync 🔐</h1>
+
+<p><strong>Embeddable authentication engine for Go — offline-first, framework-agnostic.</strong></p>
+
+<pre><code class="language-go">
+import "github.com/crydensync/cryden"
+
+func main() {
+    engine := cryden.New()
+    user, _ := cryden.SignUp(ctx, engine, "alice@example.com", "SecurePass123")
+    tokens, _, _ := cryden.Login(ctx, engine, "alice@example.com", "SecurePass123")
+}
+</code></pre>
+
+</section>
+
+
+<section>
+
+<h2>Why CrydenSync?</h2>
 
 <p>
-Welcome to the CrydenSync docs! This repository contains all the markdown files for the official CrydenSync documentation website.
+Most auth solutions lock you into their ecosystem. CrydenSync lets you
+<strong>build once, own forever</strong>—your database, your data, your rules.
+Built for developers who value simplicity, security, and sovereignty.
 </p>
 
-</section>
-
-
-<section>
-
-<h2>🚀 Quick Start</h2>
-
-<pre><code>
-# Clone the docs repo
-git clone https://github.com/crydensync/crydensync-docs-web
-cd crydensync-docs-web
-
-# Build with your favorite static site generator
-# (Next.js, Hugo, Docusaurus, MkDocs, etc.)
-</code></pre>
-
-</section>
-
-
-<section>
-
-<h2>🎨 Design Tokens</h2>
-
-<pre><code>
---primary: #6366f1;
---secondary: #10b981;
---accent: #f59e0b;
---dark: #1f2937;
---light: #f9fafb;
-</code></pre>
-
-</section>
-
-
-<section>
-
-<h2>📦 Assets Needed</h2>
+<p>Perfect for:</p>
 
 <ul>
-<li>Logo (SVG format)</li>
-<li>Architecture diagrams</li>
-<li>Code screenshots (Carbon)</li>
-<li>Social cards for sharing</li>
+<li>SaaS applications that need independent auth</li>
+<li>Self-hosted platforms with full control</li>
+<li>Privacy-conscious projects</li>
+<li>Teams shipping auth in hours, not weeks</li>
 </ul>
 
 </section>
@@ -154,30 +139,132 @@ cd crydensync-docs-web
 
 <section>
 
-<h2>🤝 Contributing</h2>
+<h2>Key Differentiators</h2>
 
-<ol>
-<li>Fork the repo</li>
-<li>Create a branch</li>
-<li>Commit changes</li>
-<li>Push changes</li>
-<li>Open a PR</li>
-</ol>
+<ul>
+<li>🚀 <strong>Offline-first</strong> — Works without internet, SQLite by default</li>
+<li>👤 <strong>Own your users</strong> — No vendor lock-in, your database, your data</li>
+<li>🔧 <strong>Framework agnostic</strong> — Use with any Go framework (or without)</li>
+<li>🔌 <strong>Interface-driven</strong> — Swap databases, loggers, rate limiters</li>
+<li>✅ <strong>Production ready</strong> — Rate limiting, audit logs, JWT, refresh tokens</li>
+</ul>
 
 </section>
 
 
 <section>
 
-<h2>📄 License</h2>
+<h2>Quick Install</h2>
 
-<p>MIT © CrydenSync</p>
-
-<p class="footer-note">
-Built for developers, by developers. With ❤️ from Nigeria.
-</p>
+<pre><code class="language-bash">
+go get github.com/crydensync/cryden
+</code></pre>
 
 </section>
+
+
+<section>
+
+<h2>📦 What's in v1.0.0</h2>
+
+<ul>
+<li>✅ Email/password authentication</li>
+<li>✅ JWT access tokens + opaque refresh tokens</li>
+<li>✅ Rate limiting (with headers)</li>
+<li>✅ Audit logging</li>
+<li>✅ Session management</li>
+<li>✅ Multiple storage backends (memory, SQLite, PostgreSQL, MongoDB)</li>
+<li>✅ Complete test suite</li>
+</ul>
+
+</section>
+
+
+<section>
+
+<h2>Coming Soon</h2>
+
+<table>
+
+<thead>
+<tr>
+<th>Feature</th>
+<th>Status</th>
+</tr>
+</thead>
+
+<tbody>
+
+<tr>
+<td>gRPC API</td>
+<td>🚧 Planned</td>
+</tr>
+
+<tr>
+<td>CLI tool (csax)</td>
+<td>🚧 Planned</td>
+</tr>
+
+<tr>
+<td>Language SDKs (JS, Python, PHP)</td>
+<td>🚧 Planned</td>
+</tr>
+
+<tr>
+<td>MFA/2FA</td>
+<td>📅 Future</td>
+</tr>
+
+<tr>
+<td>Magic Links</td>
+<td>📅 Future</td>
+</tr>
+
+<tr>
+<td>OTP/SMS</td>
+<td>📅 Future</td>
+</tr>
+
+<tr>
+<td>WebAuthn/Passkeys</td>
+<td>📅 Future</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</section>
+
+
+<section>
+
+<h2>Next Steps</h2>
+
+<ul>
+
+<li>
+<a href="pages/guide/quick-start.html">
+Get Started →
+</a>
+</li>
+
+<li>
+<a href="https://github.com/crydensync/cryden" target="_blank">
+View on GitHub
+</a>
+</li>
+
+<li>
+<a href="pages/philosophy.html">
+Read Our Philosophy
+</a>
+</li>
+
+</ul>
+
+</section>
+
 
 </main>
 

@@ -1,6 +1,4 @@
-/* =========================
-   DESIGN TOKENS
-========================= */
+/* DESIGN TOKENS */
 
 :root {
 
@@ -771,6 +769,30 @@ pre::after{
   box-shadow:
     16px 0 #f59e0b,
     32px 0 #10b981;
+
+}
+
+table{
+
+width:100%;
+border-collapse:collapse;
+margin-top:15px;
+
+}
+
+th, td{
+
+padding:10px 14px;
+text-align:left;
+
+border-bottom:1px solid #e5e7eb;
+
+}
+
+[data-theme="dark"] th,
+[data-theme="dark"] td{
+
+border-bottom:1px solid #374151;
 
 }
 
