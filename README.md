@@ -1,2 +1,2 @@
-# CredenSync-Docs
-CredenSync Documentation
+# CrydenSync-Docs
+CrydenSync Documentation
