@@ -1,277 +1,277 @@
 <!DOCTYPE html>
 <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="CrydenSync, an open source tool built 
+            for developers who value simplicity, security, and sovereignty, is 
+            an embeddable authentication engine for Go — offline-first, 
+            framework-agnostic."
+        />
 
-<head>
+        <title>CrydenSync Documentation</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="css/style.css">
+    </head>
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <body data-theme="light">
 
-<title>CrydenSync Documentation</title>
+        <!-- SIDEBAR -->
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+        <nav class="sidebar">
 
-<link rel="stylesheet" href="css/style.css">
+        <h2 class="logo">CrydenSync</h2>
 
-</head>
+        <ul class="nav">
 
-<body data-theme="light">
+        <li><a href="index.html">Introduction</a></li>
 
-<!-- SIDEBAR -->
+        <li class="nav-section">Guide</li>
+        <li><a href="pages/guide/installation.html">Installation</a></li>
+        <li><a href="pages/guide/quick-start.html">Quick Start</a></li>
+        <li><a href="pages/guide/development.html">Development</a></li>
+        <li><a href="pages/guide/testing.html">Testing</a></li>
+        <li><a href="pages/guide/configuration.html">Configuration</a></li>
+        <li><a href="pages/guide/middleware.html">Middleware</a></li>
 
-<nav class="sidebar">
+        <li class="nav-section">API</li>
+        <li><a href="pages/api/auth.html">Auth</a></li>
+        <li><a href="pages/api/core.html">Core</a></li>
+        <li><a href="pages/api/errors.html">Errors</a></li>
 
-<h2 class="logo">CrydenSync</h2>
+        <li class="nav-section">Adapters</li>
+        <li><a href="pages/adapters/user-store.html">User Store</a></li>
 
-<ul class="nav">
+        <li class="nav-section">Philosophy</li>
+        <li><a href="pages/philosophy/why-credensync.html">Why CrydenSync</a></li>
+        <li><a href="pages/philosophy.html">Overview</a></li>
 
-<li><a href="index.html">Introduction</a></li>
+        <li class="nav-section">Architecture</li>
+        <li><a href="pages/architecture.html">Architecture</a></li>
 
-<li class="nav-section">Guide</li>
-<li><a href="pages/guide/installation.html">Installation</a></li>
-<li><a href="pages/guide/quick-start.html">Quick Start</a></li>
-<li><a href="pages/guide/development.html">Development</a></li>
-<li><a href="pages/guide/testing.html">Testing</a></li>
-<li><a href="pages/guide/configuration.html">Configuration</a></li>
-<li><a href="pages/guide/middleware.html">Middleware</a></li>
+        <li class="nav-section">Design</li>
+        <li><a href="pages/design-decision.html">Design Decisions</a></li>
 
-<li class="nav-section">API</li>
-<li><a href="pages/api/auth.html">Auth</a></li>
-<li><a href="pages/api/core.html">Core</a></li>
-<li><a href="pages/api/errors.html">Errors</a></li>
+        <li class="nav-section">Project</li>
+        <li><a href="pages/roadmap.html">Roadmap</a></li>
+        <li><a href="pages/readme.html">Repository README</a></li>
 
-<li class="nav-section">Adapters</li>
-<li><a href="pages/adapters/user-store.html">User Store</a></li>
+        </ul>
 
-<li class="nav-section">Philosophy</li>
-<li><a href="pages/philosophy/why-credensync.html">Why CrydenSync</a></li>
-<li><a href="pages/philosophy.html">Overview</a></li>
+        </nav>
 
-<li class="nav-section">Architecture</li>
-<li><a href="pages/architecture.html">Architecture</a></li>
 
-<li class="nav-section">Design</li>
-<li><a href="pages/design-decision.html">Design Decisions</a></li>
 
-<li class="nav-section">Project</li>
-<li><a href="pages/roadmap.html">Roadmap</a></li>
-<li><a href="pages/readme.html">Repository README</a></li>
+        <!-- MAIN AREA -->
 
-</ul>
+        <div class="main">
 
-</nav>
 
+        <header class="header">
 
+        <input type="text" id="searchInput" placeholder="Search documentation…">
 
-<!-- MAIN AREA -->
+        <button id="themeToggle" aria-label="Toggle theme">
 
-<div class="main">
+        <svg class="theme-icon moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20">
+        <path fill="currentColor" d="M21 12.79A9 9 0 0111.21 3
+        7 7 0 1019 13.79
+        5.94 5.94 0 0021 12.79z"/>
+        </svg>
 
+        <svg class="theme-icon sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20">
+        <path fill="currentColor" d="M12 4.5V2m0 20v-2.5M4.22 4.22L2.81 2.81m18.38
+        18.38l-1.41-1.41M4.5 12H2m20 0h-2.5M4.22
+        19.78l-1.41 1.41m18.38-18.38l-1.41
+        1.41M12 7a5 5 0 100 10 5 5 0 000-10z"/>
+        </svg>
 
-<header class="header">
+        </button>
+        
+        <ul id="searchResults"></ul>
 
-<input type="text" id="searchInput" placeholder="Search documentation…">
+        </header>
 
-<button id="themeToggle" aria-label="Toggle theme">
 
-<svg class="theme-icon moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20">
-<path fill="currentColor" d="M21 12.79A9 9 0 0111.21 3
-7 7 0 1019 13.79
-5.94 5.94 0 0021 12.79z"/>
-</svg>
 
-<svg class="theme-icon sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20">
-<path fill="currentColor" d="M12 4.5V2m0 20v-2.5M4.22 4.22L2.81 2.81m18.38
-18.38l-1.41-1.41M4.5 12H2m20 0h-2.5M4.22
-19.78l-1.41 1.41m18.38-18.38l-1.41
-1.41M12 7a5 5 0 100 10 5 5 0 000-10z"/>
-</svg>
+        <main class="content">
 
-</button>
-  
-<ul id="searchResults"></ul>
+        <section>
 
-</header>
+        <h1>CrydenSync 🔐</h1>
 
+        <p><strong>Embeddable authentication engine for Go — offline-first, framework-agnostic.</strong></p>
 
+        <pre><code class="language-go">
+        import "github.com/crydensync/cryden"
 
-<main class="content">
+        func main() {
+            engine := cryden.New()
+            user, _ := cryden.SignUp(ctx, engine, "alice@example.com", "SecurePass123")
+            tokens, _, _ := cryden.Login(ctx, engine, "alice@example.com", "SecurePass123")
+        }
+        </code></pre>
 
-<section>
+        </section>
 
-<h1>CrydenSync 🔐</h1>
 
-<p><strong>Embeddable authentication engine for Go — offline-first, framework-agnostic.</strong></p>
+        <section>
 
-<pre><code class="language-go">
-import "github.com/crydensync/cryden"
+        <h2>Why CrydenSync?</h2>
 
-func main() {
-    engine := cryden.New()
-    user, _ := cryden.SignUp(ctx, engine, "alice@example.com", "SecurePass123")
-    tokens, _, _ := cryden.Login(ctx, engine, "alice@example.com", "SecurePass123")
-}
-</code></pre>
+        <p>
+        Most auth solutions lock you into their ecosystem. CrydenSync lets you
+        <strong>build once, own forever</strong>—your database, your data, your rules.
+        Built for developers who value simplicity, security, and sovereignty.
+        </p>
 
-</section>
+        <p>Perfect for:</p>
 
+        <ul>
+        <li>SaaS applications that need independent auth</li>
+        <li>Self-hosted platforms with full control</li>
+        <li>Privacy-conscious projects</li>
+        <li>Teams shipping auth in hours, not weeks</li>
+        </ul>
 
-<section>
+        </section>
 
-<h2>Why CrydenSync?</h2>
 
-<p>
-Most auth solutions lock you into their ecosystem. CrydenSync lets you
-<strong>build once, own forever</strong>—your database, your data, your rules.
-Built for developers who value simplicity, security, and sovereignty.
-</p>
+        <section>
 
-<p>Perfect for:</p>
+        <h2>Key Differentiators</h2>
 
-<ul>
-<li>SaaS applications that need independent auth</li>
-<li>Self-hosted platforms with full control</li>
-<li>Privacy-conscious projects</li>
-<li>Teams shipping auth in hours, not weeks</li>
-</ul>
+        <ul>
+        <li>🚀 <strong>Offline-first</strong> — Works without internet, SQLite by default</li>
+        <li>👤 <strong>Own your users</strong> — No vendor lock-in, your database, your data</li>
+        <li>🔧 <strong>Framework agnostic</strong> — Use with any Go framework (or without)</li>
+        <li>🔌 <strong>Interface-driven</strong> — Swap databases, loggers, rate limiters</li>
+        <li>✅ <strong>Production ready</strong> — Rate limiting, audit logs, JWT, refresh tokens</li>
+        </ul>
 
-</section>
+        </section>
 
 
-<section>
+        <section>
 
-<h2>Key Differentiators</h2>
+        <h2>Quick Install</h2>
 
-<ul>
-<li>🚀 <strong>Offline-first</strong> — Works without internet, SQLite by default</li>
-<li>👤 <strong>Own your users</strong> — No vendor lock-in, your database, your data</li>
-<li>🔧 <strong>Framework agnostic</strong> — Use with any Go framework (or without)</li>
-<li>🔌 <strong>Interface-driven</strong> — Swap databases, loggers, rate limiters</li>
-<li>✅ <strong>Production ready</strong> — Rate limiting, audit logs, JWT, refresh tokens</li>
-</ul>
+        <pre><code class="language-bash">
+        go get github.com/crydensync/cryden
+        </code></pre>
 
-</section>
+        </section>
 
 
-<section>
+        <section>
 
-<h2>Quick Install</h2>
+        <h2>📦 What's in v1.0.0</h2>
 
-<pre><code class="language-bash">
-go get github.com/crydensync/cryden
-</code></pre>
+        <ul>
+        <li>✅ Email/password authentication</li>
+        <li>✅ JWT access tokens + opaque refresh tokens</li>
+        <li>✅ Rate limiting (with headers)</li>
+        <li>✅ Audit logging</li>
+        <li>✅ Session management</li>
+        <li>✅ Multiple storage backends (memory, SQLite, PostgreSQL, MongoDB)</li>
+        <li>✅ Complete test suite</li>
+        </ul>
 
-</section>
+        </section>
 
 
-<section>
+        <section>
 
-<h2>📦 What's in v1.0.0</h2>
+        <h2>Coming Soon</h2>
 
-<ul>
-<li>✅ Email/password authentication</li>
-<li>✅ JWT access tokens + opaque refresh tokens</li>
-<li>✅ Rate limiting (with headers)</li>
-<li>✅ Audit logging</li>
-<li>✅ Session management</li>
-<li>✅ Multiple storage backends (memory, SQLite, PostgreSQL, MongoDB)</li>
-<li>✅ Complete test suite</li>
-</ul>
+        <table>
 
-</section>
+        <thead>
+        <tr>
+        <th>Feature</th>
+        <th>Status</th>
+        </tr>
+        </thead>
 
+        <tbody>
 
-<section>
+        <tr>
+        <td>gRPC API</td>
+        <td>🚧 Planned</td>
+        </tr>
 
-<h2>Coming Soon</h2>
+        <tr>
+        <td>CLI tool (csax)</td>
+        <td>🚧 Planned</td>
+        </tr>
 
-<table>
+        <tr>
+        <td>Language SDKs (JS, Python, PHP)</td>
+        <td>🚧 Planned</td>
+        </tr>
 
-<thead>
-<tr>
-<th>Feature</th>
-<th>Status</th>
-</tr>
-</thead>
+        <tr>
+        <td>MFA/2FA</td>
+        <td>📅 Future</td>
+        </tr>
 
-<tbody>
+        <tr>
+        <td>Magic Links</td>
+        <td>📅 Future</td>
+        </tr>
 
-<tr>
-<td>gRPC API</td>
-<td>🚧 Planned</td>
-</tr>
+        <tr>
+        <td>OTP/SMS</td>
+        <td>📅 Future</td>
+        </tr>
 
-<tr>
-<td>CLI tool (csax)</td>
-<td>🚧 Planned</td>
-</tr>
+        <tr>
+        <td>WebAuthn/Passkeys</td>
+        <td>📅 Future</td>
+        </tr>
 
-<tr>
-<td>Language SDKs (JS, Python, PHP)</td>
-<td>🚧 Planned</td>
-</tr>
+        </tbody>
 
-<tr>
-<td>MFA/2FA</td>
-<td>📅 Future</td>
-</tr>
+        </table>
 
-<tr>
-<td>Magic Links</td>
-<td>📅 Future</td>
-</tr>
+        </section>
 
-<tr>
-<td>OTP/SMS</td>
-<td>📅 Future</td>
-</tr>
 
-<tr>
-<td>WebAuthn/Passkeys</td>
-<td>📅 Future</td>
-</tr>
+        <section>
 
-</tbody>
+        <h2>Next Steps</h2>
 
-</table>
+        <ul>
 
-</section>
+        <li>
+        <a href="pages/guide/quick-start.html">
+        Get Started →
+        </a>
+        </li>
 
+        <li>
+        <a href="https://github.com/crydensync/cryden" target="_blank">
+        View on GitHub
+        </a>
+        </li>
 
-<section>
+        <li>
+        <a href="pages/philosophy.html">
+        Read Our Philosophy
+        </a>
+        </li>
 
-<h2>Next Steps</h2>
+        </ul>
 
-<ul>
+        </section>
 
-<li>
-<a href="pages/guide/quick-start.html">
-Get Started →
-</a>
-</li>
 
-<li>
-<a href="https://github.com/crydensync/cryden" target="_blank">
-View on GitHub
-</a>
-</li>
+        </main>
 
-<li>
-<a href="pages/philosophy.html">
-Read Our Philosophy
-</a>
-</li>
+        </div>
 
-</ul>
+        <script src="js/main.js"></script>
 
-</section>
-
-
-</main>
-
-</div>
-
-<script src="js/main.js"></script>
-
-</body>
+    </body>
 
 </html>
