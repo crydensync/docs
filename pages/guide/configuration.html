@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration - CrydenSync Docs</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/style.css">
+  </head>
+  <body data-theme="light">
+    <nav class="sidebar">
+      <h2 class="logo">CrydenSync</h2>
+      <ul class="nav">
+        <li><a href="../../index.html">Introduction</a></li>
+        <li class="nav-section">Guide</li>
+        <li><a href="installation.html">Installation</a></li>
+        <li><a href="quick-start.html">Quick Start</a></li>
+        <li><a href="development.html">Development</a></li>
+        <li><a href="testing.html">Testing</a></li>
+        <li><a href="configuration.html">Configuration</a></li>
+        <li><a href="middleware.html">Middleware</a></li>
+        
+        <li class="nav-section">API</li>
+        <li><a href="../api/auth.html">Auth</a></li>
+        <li><a href="../api/core.html">Core</a></li>
+        <li><a href="../api/errors.html">Errors</a></li>
+        
+        <li class="nav-section">Adapters</li>
+        <li><a href="../adapters/user-store.html">User Store</a></li>
+        
+        <li class="nav-section">Philosophy</li>
+        <li><a href="../philosophy/why-credensync.html">Why CrydenSync</a></li>
+        <li><a href="../philosophy.html">Overview</a></li>
+        
+        <li class="nav-section">Architecture</li>
+        <li><a href="../architecture.html">Architecture</a></li>
+        
+        <li class="nav-section">Design</li>
+        <li><a href="../design-decision.html">Design Decisions</a></li>
+        
+        <li class="nav-section">Project</li>
+        <li><a href="../roadmap.html">Roadmap</a></li>
+        <li><a href="../readme.html">Repository README</a></li>
+      </ul>
+    </nav>
+
+  <div class="main">
+
+
+  <header class="header">
+
+<input type="text" id="searchInput" placeholder="Search documentation…">
+
+<button id="themeToggle" aria-label="Toggle theme">
+
+<svg class="theme-icon moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20">
+<path fill="currentColor" d="M21 12.79A9 9 0 0111.21 3
+7 7 0 1019 13.79
+5.94 5.94 0 0021 12.79z"/>
+</svg>
+
+<svg class="theme-icon sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20">
+<path fill="currentColor" d="M12 4.5V2m0 20v-2.5M4.22 4.22L2.81 2.81m18.38
+18.38l-1.41-1.41M4.5 12H2m20 0h-2.5M4.22
+19.78l-1.41 1.41m18.38-18.38l-1.41
+1.41M12 7a5 5 0 100 10 5 5 0 000-10z"/>
+</svg>
+
+</button>
+
+<ul id="searchResults"></ul>
+
+</header>
+
+
+
+<main class="content">
+
+
+  <section>
+  
+  <h1>Configuration</h1>
+  
+  </section>
+  
+  
+  <!-- ENGINE OPTIONS -->
+  
+  <section>
+  
+  <h2>Engine Options</h2>
+  
+  <pre><code class="language-go">
+  engine := cryden.New()  // In-memory default
+  
+  // With SQLite persistence
+  engine, err := cryden.WithSQLite("users.db")
+  
+  // With custom JWT secret
+  cryden.WithJWTSecret(engine, "your-256-bit-secret")
+  
+  // With custom rate limiter
+  engine.WithRateLimiter(myCustomLimiter)
+  </code></pre>
+  
+  </section>
+  
+  
+  <!-- ENV VARIABLES -->
+  
+  <section>
+  
+  <h2>Environment Variables</h2>
+  
+  <pre><code class="language-bash">
+  # JWT secret (REQUIRED in production)
+  export CRYDEN_JWT_SECRET="your-super-secret-key"
+  
+  # Database connections
+  export DATABASE_URL="postgres://user:pass@localhost/db"
+  export MONGODB_URI="mongodb+srv://user:pass@cluster.mongodb.net"
+  </code></pre>
+  
+  </section>
+  
+  
+  <!-- PRODUCTION CONFIG -->
+  
+  <section>
+  
+  <h2>Production Configuration</h2>
+  
+  <pre><code class="language-go">
+  engine := cryden.New()
+  cryden.WithJWTSecret(engine, os.Getenv("CRYDEN_JWT_SECRET"))
+  
+  // Use PostgreSQL
+  store, _ := postgres.NewUserStore(os.Getenv("DATABASE_URL"))
+  engine = engine.WithUserStore(store)  // Coming soon
+  </code></pre>
+  
+  </section>
+  
+  
+  <!-- DEFAULT VALUES -->
+  
+  <section>
+  
+  <h2>Default Values</h2>
+  
+  <table>
+  
+  <thead>
+  <tr>
+  <th>Setting</th>
+  <th>Default</th>
+  <th>Description</th>
+  </tr>
+  </thead>
+  
+  <tbody>
+  
+  <tr>
+  <td>Password min length</td>
+  <td>8</td>
+  <td>Security baseline</td>
+  </tr>
+  
+  <tr>
+  <td>Access token TTL</td>
+  <td>15m</td>
+  <td>Short-lived JWT</td>
+  </tr>
+  
+  <tr>
+  <td>Refresh token TTL</td>
+  <td>7d</td>
+  <td>Long-lived session</td>
+  </tr>
+  
+  <tr>
+  <td>Rate limit</td>
+  <td>5 per minute</td>
+  <td>Per IP</td>
+  </tr>
+  
+  <tr>
+  <td>Hasher</td>
+  <td>bcrypt (cost 10)</td>
+  <td>Password hashing</td>
+  </tr>
+  
+  </tbody>
+  
+  </table>
+  
+  </section>
+  
+  
+  <!-- FUTURE CONFIG -->
+  
+  <section>
+  
+  <h2>Future Configuration</h2>
+  
+  <table>
+  
+  <thead>
+  <tr>
+  <th>Feature</th>
+  <th>Planned</th>
+  </tr>
+  </thead>
+  
+  <tbody>
+  
+  <tr>
+  <td>Argon2 hasher</td>
+  <td>v1.1.0</td>
+  </tr>
+  
+  <tr>
+  <td>Redis rate limiter</td>
+  <td>v1.1.0</td>
+  </tr>
+  
+  <tr>
+  <td>File audit logger</td>
+  <td>v1.1.0</td>
+  </tr>
+  
+  </tbody>
+  
+  </table>
+  
+  </section>
+  
+  
+  </main>
+  
+  </div>
+  
+  
+  <script src="../../js/main.js"></script>
+
+</body>
+
+</html>

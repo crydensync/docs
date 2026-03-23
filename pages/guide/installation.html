@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Installation - CrydenSync Docs</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../css/style.css">
+
+</head>
+
+<body data-theme="light">
+
+
+<!-- SIDEBAR -->
+
+<nav class="sidebar">
+
+<h2 class="logo">CrydenSync</h2>
+
+<ul class="nav">
+
+<li><a href="../../index.html">Introduction</a></li>
+
+<li class="nav-section">Guide</li>
+<li><a href="installation.html">Installation</a></li>
+<li><a href="quick-start.html">Quick Start</a></li>
+<li><a href="development.html">Development</a></li>
+<li><a href="testing.html">Testing</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+<li><a href="middleware.html">Middleware</a></li>
+
+<li class="nav-section">API</li>
+<li><a href="../api/auth.html">Auth</a></li>
+<li><a href="../api/core.html">Core</a></li>
+<li><a href="../api/errors.html">Errors</a></li>
+
+<li class="nav-section">Adapters</li>
+<li><a href="../adapters/user-store.html">User Store</a></li>
+
+<li class="nav-section">Philosophy</li>
+<li><a href="../philosophy/why-credensync.html">Why CrydenSync</a></li>
+<li><a href="../philosophy.html">Overview</a></li>
+
+<li class="nav-section">Architecture</li>
+<li><a href="../architecture.html">Architecture</a></li>
+
+<li class="nav-section">Design</li>
+<li><a href="../design-decision.html">Design Decisions</a></li>
+
+<li class="nav-section">Project</li>
+<li><a href="../roadmap.html">Roadmap</a></li>
+<li><a href="../readme.html">Repository README</a></li>
+
+</ul>
+
+</nav>
+
+
+
+<!-- MAIN AREA -->
+
+<div class="main">
+
+
+<header class="header">
+
+<input type="text" id="searchInput" placeholder="Search documentation…">
+
+<button id="themeToggle" aria-label="Toggle theme">
+
+<svg class="theme-icon moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20">
+<path fill="currentColor" d="M21 12.79A9 9 0 0111.21 3
+7 7 0 1019 13.79
+5.94 5.94 0 0021 12.79z"/>
+</svg>
+
+<svg class="theme-icon sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20">
+<path fill="currentColor" d="M12 4.5V2m0 20v-2.5M4.22 4.22L2.81 2.81m18.38
+18.38l-1.41-1.41M4.5 12H2m20 0h-2.5M4.22
+19.78l-1.41 1.41m18.38-18.38l-1.41
+1.41M12 7a5 5 0 100 10 5 5 0 000-10z"/>
+</svg>
+
+</button>
+
+<ul id="searchResults"></ul>
+
+</header>
+
+
+
+<main class="content">
+
+<section>
+
+<h1>Getting Started with CrydenSync</h1>
+
+</section>
+
+
+<section>
+
+<h2>📦 Installation Methods</h2>
+
+</section>
+
+
+<!-- METHOD 1 -->
+
+<section>
+
+<h3>Method 1: Go Get (Recommended)</h3>
+
+<pre><code class="language-bash">
+go get github.com/crydensync/cryden@v1.0.0
+</code></pre>
+
+<h4>Verify</h4>
+
+<pre><code class="language-go">
+package main
+
+import (
+    "fmt"
+
+    "github.com/crydensync/cryden"
+)
+
+func main() {
+    engine := cryden.New()
+    fmt.Printf("Cryden v1.0.0 ready: %T\n", engine)
+}
+</code></pre>
+
+</section>
+
+
+<!-- METHOD 2 -->
+
+<section>
+
+<h3>Method 2: Clone and Build</h3>
+
+<pre><code class="language-bash">
+# Clone the repository
+git clone https://github.com/crydensync/cryden.git
+cd cryden
+
+# Build the library
+go build ./...
+
+# Run the complete example
+cd examples/complete
+go run main.go
+
+# Or try the basic example
+cd ../basic
+go run main.go
+
+# Run tests
+cd ../..
+go test ./internal/tests/... -v
+</code></pre>
+
+</section>
+
+
+<!-- METHOD 3 -->
+
+<section>
+
+<h3>Method 3: Download Binary</h3>
+
+<pre><code class="language-bash">
+# Download latest release
+wget https://github.com/crydensync/cryden/releases/latest/download/cryden-linux-amd64.tar.gz
+tar -xzf cryden-linux-amd64.tar.gz
+./cryden -version
+</code></pre>
+
+</section>
+
+
+<!-- VERSIONING -->
+
+<section>
+
+<h2>Versioning</h2>
+
+<p>Cryden follows Semantic Versioning:</p>
+
+<ul>
+<li>v1.0.0 — Stable core API</li>
+<li>v1.1.0 — New features (gRPC, CLI)</li>
+<li>v2.0.0 — Breaking changes</li>
+</ul>
+
+</section>
+
+
+<!-- MODULE PROXY -->
+
+<section>
+
+<h2>Module Proxy</h2>
+
+<p>If you're behind a firewall, use Go proxy:</p>
+
+<pre><code class="language-bash">
+export GOPROXY=https://proxy.golang.org.direct
+</code></pre>
+
+</section>
+
+
+<!-- NEXT STEP -->
+
+<section>
+
+<h2>Next</h2>
+
+<p>
+<a href="quick-start.html">Quick Start →</a>
+</p>
+
+</section>
+
+
+</main>
+
+</div>
+
+
+<script src="../../js/main.js"></script>
+
+</body>
+
+</html>
