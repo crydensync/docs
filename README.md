@@ -1,2 +1,2 @@
 # CrydenSync-Docs
-CrydenSync Documentation
+Official CrydenSync Documentation
