@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Testing - CrydenSync Docs</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="../../css/style.css">
+    </head>
+    <body data-theme="light">
+        <nav class="sidebar">
+        <h2 class="logo">CrydenSync</h2>
+        <ul class="nav">
+            <li><a href="../../index.html">Introduction</a></li>
+            <li class="nav-section">Guide</li>
+            <li><a href="installation.html">Installation</a></li>
+            <li><a href="quick-start.html">Quick Start</a></li>
+            <li><a href="development.html">Development</a></li>
+            <li><a href="testing.html">Testing</a></li>
+            <li><a href="configuration.html">Configuration</a></li>
+            <li><a href="middleware.html">Middleware</a></li>
+
+            <li class="nav-section">API</li>
+            <li><a href="../api/auth.html">Auth</a></li>
+            <li><a href="../api/core.html">Core</a></li>
+            <li><a href="../api/errors.html">Errors</a></li>
+            
+            <li class="nav-section">Adapters</li>
+            <li><a href="../adapters/user-store.html">User Store</a></li>
+            
+            <li class="nav-section">Philosophy</li>
+            <li><a href="../philosophy/why-credensync.html">Why CrydenSync</a></li>
+            <li><a href="../philosophy.html">Overview</a></li>
+            
+            <li class="nav-section">Architecture</li>
+            <li><a href="../architecture.html">Architecture</a></li>
+            
+            <li class="nav-section">Design</li>
+            <li><a href="../design-decision.html">Design Decisions</a></li>
+            
+            <li class="nav-section">Project</li>
+            <li><a href="../roadmap.html">Roadmap</a></li>
+            <li><a href="../readme.html">Repository README</a></li>
+        </ul>
+    </nav>
+
+    <div class="main">
+        <header class="header">
+            <input type="text" id="searchInput" placeholder="Search documentation…">
+                <button id="themeToggle" aria-label="Toggle theme">
+                    <svg class="theme-icon moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20">
+                        <path fill="currentColor" d="M21 12.79A9 9 0 0111.21 3
+                        7 7 0 1019 13.79
+                        5.94 5.94 0 0021 12.79z"/>
+                    </svg>
+                    <svg class="theme-icon sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20">
+                        <path fill="currentColor" d="M12 4.5V2m0 20v-2.5M4.22 4.22L2.81 2.81m18.38
+                        18.38l-1.41-1.41M4.5 12H2m20 0h-2.5M4.22
+                        19.78l-1.41 1.41m18.38-18.38l-1.41
+                        1.41M12 7a5 5 0 100 10 5 5 0 000-10z"/>
+                    </svg>
+                </button>
+                <ul id="searchResults"></ul>
+            </header>
+            <main class="content">
+                <section>
+                    <h1>Testing</h1>                    
+                    <p>Cryden is designed to be <strong>extremely testable</strong>. Here's how:</p>
+                </section>
+                
+                <section>
+                    <h2>In-Memory Storage (No Cleanup)</h2>
+                    
+                    <pre><code class="language-go">
+                    func TestLogin(t *testing.T) {
+                        // Use in-memory stores - no cleanup needed!
+                        engine := cryden.New()
+                        ctx := context.Background()
+                    
+                        // Create test user
+                        cryden.SignUp(ctx, engine, "test@example.com", "password123")
+                    
+                        // Test login
+                        tokens, _, err := cryden.Login(ctx, engine, "test@example.com", "password123")
+                        if err != nil {
+                            t.Errorf("Login failed: %v", err)
+                        }
+                    
+                        if tokens.AccessToken == "" {
+                            t.Error("Expected access token")
+                        }
+                    }
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h2>Mock Hasher (Fast Tests)</h2>
+                    
+                    <pre><code class="language-go">
+                    func init() {
+                        // Use mock hasher for all tests (super fast!)
+                        engine := cryden.New()
+                        engine.WithHasher(&core.MockHasher{})
+                    }
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h2>No-Op Rate Limiter</h2>
+                    
+                    <pre><code class="language-go">
+                    func TestWithoutRateLimiting(t *testing.T) {
+                        engine := cryden.New()
+                        engine.WithRateLimiter(&core.NoopRateLimiter{}) // Never blocks
+                    
+                        // Make 100 login attempts - all allowed
+                        for i := 0; i < 100; i++ {
+                            _, _, err := cryden.Login(ctx, engine, "test@example.com", "password123")
+                            if err != nil {
+                                t.Errorf("Attempt %d failed: %v", i, err)
+                            }
+                        }
+                    }
+                    </code></pre>
+                </section>
+
+
+<!-- DETERMINISTIC TESTING -->
+
+<section>
+
+<h2>Deterministic Testing</h2>
+
+<pre><code class="language-go">
+func TestSpecificScenario(t *testing.T) {
+    engine := cryden.New()
+
+    // Create exactly the state you need
+    user, _ := cryden.SignUp(ctx, engine, "alice@example.com", "pass123")
+    tokens, _, _ := cryden.Login(ctx, engine, "alice@example.com", "pass123")
+
+    // Test logout
+    err := cryden.Logout(ctx, engine, tokens.RefreshToken)
+    if err != nil {
+        t.Errorf("Logout failed: %v", err)
+    }
+}
+</code></pre>
+
+</section>
+
+
+<!-- CI/CD -->
+
+<section>
+
+<h2>CI/CD Integration</h2>
+
+<pre><code class="language-yaml">
+name: Test
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      - run: go test ./internal/tests/... -v
+</code></pre>
+
+</section>
+
+
+<!-- SQLITE TESTING -->
+
+<section>
+
+<h2>Testing Database Implementations</h2>
+
+<pre><code class="language-go">
+func TestWithSQLite(t *testing.T) {
+    // Use temporary file
+    dbPath := filepath.Join(t.TempDir(), "test.db")
+    engine, err := cryden.WithSQLite(dbPath)
+    if err != nil {
+        t.Fatal(err)
+    }
+    defer engine.Close()
+
+    // Test with real SQLite
+    // File is automatically cleaned up by t.TempDir()
+}
+</code></pre>
+
+</section>
+
+
+<!-- FUTURE -->
+
+<section>
+
+<h2>Future Testing Tools</h2>
+
+<ul>
+<li>Built-in load testing</li>
+<li>Benchmark suites</li>
+<li>Fuzzing helpers</li>
+<li>Integration test templates</li>
+</ul>
+
+</section>
+
+
+</main>
+
+</div>
+
+
+<script src="../../js/main.js"></script>
+
+</body>
+
+</html>
