@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Core API - CrydenSync Docs</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../css/style.css">
+
+</head>
+
+<body data-theme="light">
+
+
+<!-- SIDEBAR -->
+
+<nav class="sidebar">
+
+<h2 class="logo">CrydenSync</h2>
+
+<ul class="nav">
+
+<li><a href="../../index.html">Introduction</a></li>
+
+<li class="nav-section">Guide</li>
+<li><a href="../guide/installation.html">Installation</a></li>
+<li><a href="../guide/quick-start.html">Quick Start</a></li>
+<li><a href="../guide/configuration.html">Configuration</a></li>
+<li><a href="../guide/middleware.html">Middleware</a></li>
+<li><a href="../guide/testing.html">Testing</a></li>
+
+<li class="nav-section">API</li>
+<li><a href="auth.html">Auth</a></li>
+<li><a href="core.html">Core</a></li>
+<li><a href="errors.html">Errors</a></li>
+
+<li class="nav-section">Adapters</li>
+<li><a href="../adapters/user-store.html">User Store</a></li>
+
+<li class="nav-section">Philosophy</li>
+<li><a href="../philosophy.html">Overview</a></li>
+
+<li class="nav-section">Architecture</li>
+<li><a href="../architecture.html">Architecture</a></li>
+
+<li class="nav-section">Project</li>
+<li><a href="../roadmap.html">Roadmap</a></li>
+
+</ul>
+
+</nav>
+
+
+
+<!-- MAIN -->
+
+<div class="main">
+
+
+<header class="header">
+
+<input type="text" id="searchInput" placeholder="Search Core API…">
+
+                <button id="themeToggle" aria-label="Toggle theme">
+                    <svg class="theme-icon moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20">
+                        <path fill="currentColor" d="M21 12.79A9 9 0 0111.21 3
+                        7 7 0 1019 13.79
+                        5.94 5.94 0 0021 12.79z"/>
+                    </svg>
+                    <svg class="theme-icon sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20">
+                        <path fill="currentColor" d="M12 4.5V2m0 20v-2.5M4.22 4.22L2.81 2.81m18.38
+                        18.38l-1.41-1.41M4.5 12H2m20 0h-2.5M4.22
+                        19.78l-1.41 1.41m18.38-18.38l-1.41
+                        1.41M12 7a5 5 0 100 10 5 5 0 000-10z"/>
+                    </svg>
+                </button>
+
+<ul id="searchResults"></ul>
+
+</header>
+
+
+
+<main class="content">
+
+
+<section>
+
+<h1>Core API Reference</h1>
+
+<p>Core engine configuration and low-level primitives for CrydenSync.</p>
+
+</section>
+
+
+<!-- ENGINE -->
+
+<section>
+
+<h2>Engine</h2>
+
+<pre><code class="language-go">
+type Engine struct { /* private fields */ }
+
+// New creates an in-memory engine (for testing)
+func New() *Engine
+
+// WithSQLite creates an engine with SQLite persistence
+func WithSQLite(dbPath string) (*Engine, error)
+
+// WithJWTSecret sets a custom JWT secret
+func WithJWTSecret(engine *Engine, secret string) *Engine
+</code></pre>
+
+</section>
+
+
+<!-- CONFIG METHODS -->
+
+<section>
+
+<h2>Configuration Methods</h2>
+
+<pre><code class="language-go">
+func (e *Engine) WithHasher(hasher Hasher) *Engine
+func (e *Engine) WithRateLimiter(limiter RateLimiter) *Engine
+func (e *Engine) WithAuditLogger(logger AuditLogger) *Engine
+</code></pre>
+
+</section>
+
+
+<!-- TOKEN VERIFICATION -->
+
+<section>
+
+<h2>Token Verification</h2>
+
+<pre><code class="language-go">
+func VerifyToken(engine *Engine, tokenString string) (string, error)
+// Returns userID or error
+</code></pre>
+
+</section>
+
+
+<!-- EXAMPLE -->
+
+<section>
+
+<h2>Example</h2>
+
+<pre><code class="language-go">
+engine := cryden.New()
+
+cryden.WithJWTSecret(engine, "your-secret")
+
+userID, err := cryden.VerifyToken(engine, tokenString)
+if err != nil {
+    // Handle invalid token
+}
+</code></pre>
+
+</section>
+
+
+</main>
+
+</div>
+
+
+<script src="../../js/main.js"></script>
+
+</body>
+
+</html>

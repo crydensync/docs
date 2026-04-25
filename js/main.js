@@ -61,27 +61,31 @@ document.querySelectorAll("pre").forEach(block => {
 // THEME TOGGLE
 // ==============================
 
-const themeToggle = document.getElementById("themeToggle");
+const toggleBtn = document.getElementById("themeToggle");
+const root = document.documentElement;
 
-themeToggle.addEventListener("click", () => {
+/* =========================
+   SET THEME
+========================= */
 
-  const body = document.body;
-
-  const currentTheme = body.getAttribute("data-theme");
-
-  const nextTheme = currentTheme === "light" ? "dark" : "light";
-
-  body.setAttribute("data-theme", nextTheme);
-
-  localStorage.setItem("theme", nextTheme);
-
-});
-
-
-// Load saved theme
-
-const savedTheme = localStorage.getItem("theme");
-
-if(savedTheme){
-  document.body.setAttribute("data-theme", savedTheme);
+function setTheme(mode) {
+  root.setAttribute("data-theme", mode);
+  localStorage.setItem("theme", mode);
 }
+
+/* =========================
+   LOAD SAVED THEME
+========================= */
+
+const savedTheme = localStorage.getItem("theme") || "light";
+setTheme(savedTheme);
+
+/* =========================
+   TOGGLE
+========================= */
+
+toggleBtn.addEventListener("click", () => {
+  const current = root.getAttribute("data-theme");
+  const next = current === "dark" ? "light" : "dark";
+  setTheme(next);
+});

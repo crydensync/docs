@@ -93,34 +93,34 @@
                 <section>
                     <h3>2. Create main.go</h3>
               <pre><code class="language-go">
-                  package main
+      package main
 
-                  import (
-                      "context"
-                      "fmt"
-                      "log"
+      import (
+          "context"
+          "fmt"
+          "log"
 
-                      "github.com/crydensync/cryden"
-                  )
+          "github.com/crydensync/cryden"
+      )
 
-                        func main() {
-                            ctx := context.Background()
-                            engine := cryden.New()
+      func main() {
+          ctx := context.Background()
+          engine := cryden.New()
 
-                            // Sign up
-                            user, err := cryden.SignUp(ctx, engine, "demo@example.com", "DemoPass123")
-                            if err != nil {
-                                log.Fatal(err)
-                            }
-                            fmt.Printf("✅ User: %s\n", user.Email)
+          // Sign up
+          user, err := cryden.SignUp(ctx, engine, "demo@example.com", "DemoPass123")
+          if err != nil {
+              log.Fatal(err)
+          }
+          fmt.Printf("✅ User: %s\n", user.Email)
 
-                            // Login
-                            tokens, _, err := cryden.Login(ctx, engine, "demo@example.com", "DemoPass123")
-                            if err != nil {
-                                log.Fatal(err)
-                            }
-                            fmt.Printf("✅ Access token: %.30s...\n", tokens.AccessToken)
-                        }
+          // Login
+          tokens, _, err := cryden.Login(ctx, engine, "demo@example.com", "DemoPass123")
+          if err != nil {
+              log.Fatal(err)
+          }
+          fmt.Printf("✅ Access token: %.30s...\n", tokens.AccessToken)
+      }
                     </code></pre>
                 </section>
 

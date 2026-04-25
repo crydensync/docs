@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Auth API - CrydenSync Docs</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../css/style.css">
+
+</head>
+
+<body data-theme="light">
+
+
+<!-- SIDEBAR -->
+
+<nav class="sidebar">
+
+<h2 class="logo">CrydenSync</h2>
+
+<ul class="nav">
+
+<li><a href="../../index.html">Introduction</a></li>
+
+<li class="nav-section">Guide</li>
+<li><a href="../guide/installation.html">Installation</a></li>
+<li><a href="../guide/quick-start.html">Quick Start</a></li>
+<li><a href="../guide/configuration.html">Configuration</a></li>
+<li><a href="../guide/middleware.html">Middleware</a></li>
+<li><a href="../guide/testing.html">Testing</a></li>
+
+<li class="nav-section">API</li>
+<li><a href="auth.html">Auth</a></li>
+<li><a href="core.html">Core</a></li>
+<li><a href="errors.html">Errors</a></li>
+
+<li class="nav-section">Adapters</li>
+<li><a href="../adapters/user-store.html">User Store</a></li>
+
+<li class="nav-section">Philosophy</li>
+<li><a href="../philosophy.html">Overview</a></li>
+
+<li class="nav-section">Architecture</li>
+<li><a href="../architecture.html">Architecture</a></li>
+
+<li class="nav-section">Project</li>
+<li><a href="../roadmap.html">Roadmap</a></li>
+
+</ul>
+
+</nav>
+
+
+
+<!-- MAIN -->
+
+<div class="main">
+
+
+<header class="header">
+
+<input type="text" id="searchInput" placeholder="Search API…">
+
+                <button id="themeToggle" aria-label="Toggle theme">
+                    <svg class="theme-icon moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20">
+                        <path fill="currentColor" d="M21 12.79A9 9 0 0111.21 3
+                        7 7 0 1019 13.79
+                        5.94 5.94 0 0021 12.79z"/>
+                    </svg>
+                    <svg class="theme-icon sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20">
+                        <path fill="currentColor" d="M12 4.5V2m0 20v-2.5M4.22 4.22L2.81 2.81m18.38
+                        18.38l-1.41-1.41M4.5 12H2m20 0h-2.5M4.22
+                        19.78l-1.41 1.41m18.38-18.38l-1.41
+                        1.41M12 7a5 5 0 100 10 5 5 0 000-10z"/>
+                    </svg>
+                </button>
+
+<ul id="searchResults"></ul>
+
+</header>
+
+
+
+<main class="content">
+
+
+<section>
+
+<h1>Auth API Reference</h1>
+
+<p>Core authentication functions for CrydenSync engine.</p>
+
+</section>
+
+
+<!-- SIGN UP -->
+
+<section>
+
+<h2>Sign Up</h2>
+
+<pre><code class="language-go">
+func SignUp(
+    ctx context.Context,
+    engine *Engine,
+    email, password string,
+) (*User, error)
+</code></pre>
+
+<p><strong>Returns:</strong> User on success</p>
+<p><strong>Errors:</strong> ErrInvalidEmail, ErrPasswordTooShort, ErrUserExists</p>
+
+</section>
+
+
+<!-- LOGIN -->
+
+<section>
+
+<h2>Login</h2>
+
+<pre><code class="language-go">
+func Login(
+    ctx context.Context,
+    engine *Engine,
+    email, password string,
+) (*TokenPair, *LimitResult, error)
+</code></pre>
+
+<p><strong>Returns:</strong> TokenPair + rate limit info</p>
+<p><strong>Errors:</strong> ErrInvalidCredentials, ErrTooManyAttempts</p>
+
+</section>
+
+
+<!-- LOGOUT -->
+
+<section>
+
+<h2>Logout</h2>
+
+<pre><code class="language-go">
+func Logout(
+    ctx context.Context,
+    engine *Engine,
+    refreshToken string,
+) error
+</code></pre>
+
+<p><strong>Errors:</strong> ErrInvalidToken</p>
+
+</section>
+
+
+<!-- LOGOUT ALL -->
+
+<section>
+
+<h2>Logout All</h2>
+
+<pre><code class="language-go">
+func LogoutAll(
+    ctx context.Context,
+    engine *Engine,
+    userID string,
+) error
+</code></pre>
+
+</section>
+
+
+<!-- CHANGE PASSWORD -->
+
+<section>
+
+<h2>Change Password</h2>
+
+<pre><code class="language-go">
+func ChangePassword(
+    ctx context.Context,
+    engine *Engine,
+    userID, oldPassword, newPassword string,
+) error
+</code></pre>
+
+</section>
+
+
+<!-- CHANGE EMAIL -->
+
+<section>
+
+<h2>Change Email</h2>
+
+<pre><code class="language-go">
+func ChangeEmail(
+    ctx context.Context,
+    engine *Engine,
+    userID, newEmail string,
+) error
+</code></pre>
+
+</section>
+
+
+<!-- DELETE ACCOUNT -->
+
+<section>
+
+<h2>Delete Account</h2>
+
+<pre><code class="language-go">
+func DeleteAccount(
+    ctx context.Context,
+    engine *Engine,
+    userID string,
+) error
+</code></pre>
+
+</section>
+
+
+<!-- REFRESH TOKEN -->
+
+<section>
+
+<h2>Refresh Token</h2>
+
+<pre><code class="language-go">
+func RefreshToken(
+    ctx context.Context,
+    engine *Engine,
+    refreshToken string,
+) (*TokenPair, error)
+</code></pre>
+
+</section>
+
+
+<!-- TYPES -->
+
+<section>
+
+<h2>Types</h2>
+
+<h3>TokenPair</h3>
+
+<pre><code class="language-go">
+type TokenPair struct {
+    AccessToken  string
+    RefreshToken string
+    TokenType    string // "Bearer"
+    ExpiresIn    int64  // seconds
+}
+</code></pre>
+
+<h3>LimitResult</h3>
+
+<pre><code class="language-go">
+type LimitResult struct {
+    Allowed   bool
+    Limit     int
+    Remaining int
+    Reset     time.Duration
+}
+</code></pre>
+
+</section>
+
+
+</main>
+
+</div>
+
+
+<script src="../../js/main.js"></script>
+
+</body>
+
+</html>
