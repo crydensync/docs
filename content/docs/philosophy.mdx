@@ -1,0 +1,49 @@
+---
+title: "Philosophy"
+description: "CrydenSync exists because of one recurring, widely-felt problem: developers keep rewriting authentication from scratch for every new project, which le"
+---
+
+CrydenSync exists because of one recurring, widely-felt problem: developers keep rewriting authentication from scratch for every new project, which leads to security mistakes, inconsistent implementations, wasted time, and — eventually — vendor lock-in when teams give up and adopt a hosted auth provider instead.
+
+CrydenSync's answer is not "use our hosted service." It's the opposite: **own your users.**
+
+## Core principles
+
+### 1. Own your users
+
+Your users belong to your application, not to an auth provider. With CrydenSync, user data lives in your own database, under your own control, from the very first line of code. There is no step where user records exist somewhere you don't control.
+
+### 2. No vendor lock-in
+
+Self-host, export your data anytime, migrate without friction. No proprietary formats. No forced migrations. If you stop using CrydenSync tomorrow, your users table is still just a Postgres table you fully own — nothing about it depends on CrydenSync continuing to exist.
+
+### 3. Framework-agnostic
+
+The core engine has no request objects, no response writers, no cookies, no headers, no assumptions about HTTP at all. It is pure logic that can be wrapped by anything: a CLI, an HTTP API, a gRPC service, a desktop app. Any piece of context the engine needs (a caller's IP address, a user agent, a session's device info) is passed in explicitly as a parameter by the caller — the engine never infers it, because inferring it would mean making an assumption about the transport layer that may not hold.
+
+This principle directly fixed a real bug found in an earlier, informally-built version of CrydenSync: the original implementation hardcoded a caller's IP to `127.0.0.1` inside the engine itself, because the engine's author had implicitly assumed an HTTP context existed. Once that assumption was removed and IP became an explicit parameter, the bug could not exist by construction.
+
+### 4. Developer-first
+
+Clean API, comprehensive documentation (this documentation set), examples for everything. The goal is that a developer can read the public API surface of the `cryden` package and understand what every function does without needing to read the implementation.
+
+### 5. Security by default
+
+Safe out of the box. No insecure defaults. If a piece of configuration is security-critical (the JWT signing secret, for example), the engine refuses to start rather than silently falling back to a default value. An error at startup is always safer than a silent, insecure default at runtime.
+
+### 6. Zero telemetry
+
+The engine never phones home. It has no analytics, no usage tracking, no network calls to any CrydenSync-operated service. Logs and audit events go wherever the consuming application configures them to go — the engine only defines the interfaces (`Logger`, `AuditStore`, `EmailSender`); it never ships an implementation that talks to a third party by default. This principle is applied consistently, not just to user data: it covers operational logs, audit trails, and email delivery too. Nothing CrydenSync produces leaves the consuming application's own infrastructure unless the consuming application explicitly wires it to do so.
+
+## What this philosophy explicitly rules out
+
+- **A hosted, multi-tenant CrydenSync Cloud service is not part of the current plan.** Every deployment is self-hosted, one instance per consuming application, one database per deployment. A future hosted offering is a legitimate but entirely separate business decision, not something the current architecture assumes or is designed around.
+- **The engine will not silently collect usage data "to improve the product."** If this every changes, it would be a deliberate, disclosed, opt-in decision — never a default.
+
+## Where CrydenSync sits relative to alternatives
+
+CrydenSync's "own your users, self-hosted, no lock-in" positioning is not unique in the broader auth-library landscape — projects like better-auth, SuperTokens, Ory Kratos, Lucia, Keycloak, and Authelia occupy similar territory. CrydenSync's differentiation is not the philosophy alone (which is shared across this category) but the combination of: a Go-native, interface-first, deliberately narrow-scope core engine; a documented, tested, and honestly-scoped v2 rewrite; and an ecosystem (CLI, API, SDKs) built incrementally on a proven foundation rather than shipped all at once.
+
+## A note on trust and maturity
+
+CrydenSync v2 is a from-scratch, disciplined rewrite of an earlier version that had real, documented security issues (predictable session/token IDs derived from `time.Now().UnixNano()`, a hardcoded default JWT secret, and a rate limiter that could not see real caller IPs). Every one of those issues was identified, understood, and fixed by design in v2 — not patched over. This documentation set is written honestly about what has and has not yet been independently verified: the core engine has extensive automated test coverage, including real integration tests against a live Postgres database, but has not yet undergone external, professional security audit. Anyone evaluating CrydenSync for a security-critical deployment should weigh that fact directly, not assume audit-level assurance it has not yet earned.

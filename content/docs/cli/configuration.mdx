@@ -1,0 +1,30 @@
+---
+title: "CLI Configuration"
+description: "`csax` reads configuration from a local `.env` file (loaded automatically from the current directory) or real environment variables — real environment"
+---
+
+`csax` reads configuration from a local `.env` file (loaded automatically from the current directory) or real environment variables — real environment variables always take precedence over `.env` file values.
+
+## Variables
+
+| Variable | Required | Notes |
+|---|---|---|
+| `DATABASE_URL` | Yes | Same database your application/`api` instance uses |
+| `JWT_SECRET` | Only for commands that construct a full engine instance (`sessions revoke`, `sessions revoke-all`) | Read-only commands (`users get`, `sessions list`, `audit tail`) use the store layer directly and do not require this |
+| `MIGRATIONS_DIR` | No, default `./migrations` | Should point at a folder containing both the engine's own migration file and any migrations your application defines — `csax migrate` treats every `*.up.sql`/`*.down.sql` file the same, regardless of which project originally authored it |
+
+## Generating `.env` interactively
+
+```bash
+csax config init
+```
+
+See [commands.md](/docs/cli/commands#csax-config-init) for the interactive flow.
+
+## Connecting to Supabase
+
+Use the **session pooler** connection string, not the transaction pooler — `csax`'s migration runner executes multi-statement SQL files inside database transactions, which can misbehave under a transaction-mode pgbouncer pooler. See [guide/installation.md](/docs/guide/installation#connecting-to-supabase-specifically) for the full explanation, which applies identically here.
+
+## A platform-specific note: Android/Termux
+
+`csax` uses the same `lib/pq` Postgres driver as the engine, and is affected by the same Android/Termux limitation described in [guide/installation.md](/docs/guide/installation#a-known-platform-specific-issue-androidtermux) — every database-touching command will fail with a `pqutil.User: not supported on current platform` error on that platform specifically, regardless of correct configuration. See that section for workarounds.

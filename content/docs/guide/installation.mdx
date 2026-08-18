@@ -1,0 +1,75 @@
+---
+title: "Installation"
+description: ""
+---
+
+## Prerequisites
+
+- Go 1.22 or later (check your own `go.mod`'s `go` directive if installing from source — this must match or exceed it)
+- PostgreSQL 13 or later (the engine's migration uses `gen_random_uuid()`, built into Postgres core since version 13)
+- A Postgres connection string (self-hosted, or a managed provider such as Supabase, Neon, or RDS)
+
+## Installing the engine (for Go developers embedding it directly)
+
+```bash
+go get github.com/crydensync/cryden/v2
+```
+
+Note the `/v2` in the import path — this is required by Go's module system for any major version 2 or above, not optional or cosmetic.
+
+## Running the database migration
+
+The engine's schema (users, sessions, audit_events, verification_tokens tables) is defined in `store/postgres/migrations/0001_initial_schema.up.sql` within the `cryden` repository. Apply it directly:
+
+```bash
+psql "$DATABASE_URL" -f store/postgres/migrations/0001_initial_schema.up.sql
+```
+
+A corresponding `.down.sql` file exists for rollback.
+
+## Installing the HTTP API (for non-Go developers, or Go developers wanting a REST interface)
+
+```bash
+git clone https://github.com/crydensync/api
+cd api
+cp .env.example .env
+# fill in DATABASE_URL, JWT_SECRET, CORS_ORIGINS
+go run .
+```
+
+The `api` repository includes its own copy of the engine's migration under `migrations/`, so it can be set up without also cloning the `cryden` repository separately.
+
+## Installing the admin CLI
+
+```bash
+go install github.com/crydensync/csax@latest
+csax config init
+```
+
+`config init` interactively prompts for your database connection string and JWT secret, writing them to a local `.env` file.
+
+## Installing the JavaScript/TypeScript SDK
+
+```bash
+npm install @crydensync/sdk
+```
+
+Requires a running `api` instance to connect to — the SDK does not talk to Postgres or the Go engine directly, only to the HTTP API.
+
+## Connecting to Supabase specifically
+
+Supabase provides three connection string variants. For CrydenSync:
+
+- **Use:** the direct connection string, or the **session pooler** — both support the multi-statement database transactions the engine relies on for atomic refresh token rotation.
+- **Avoid:** the **transaction pooler** (commonly on port `6543`) — pgbouncer running in transaction mode can interfere with the multi-statement transactions the engine's `RotateToken` operation depends on.
+- If your network lacks IPv6 connectivity (common on some mobile carriers and certain home networks), the direct connection string (which typically resolves to an IPv6-only address on Supabase) will fail with a "network unreachable" error even with fully correct credentials. The session pooler connection string resolves over IPv4 and avoids this.
+
+## A known platform-specific issue: Android/Termux
+
+Go's standard library has `os/user.Current()` explicitly unimplemented for `GOOS=android`. The `lib/pq` Postgres driver (used by the engine's Postgres implementation) calls this internally during connection setup, which causes every database connection attempt to fail on Android/Termux with an error resembling `pqutil.User: not supported on current platform` — regardless of how correct the connection string and credentials are. No environment variable resolves this, because the underlying code path does not exist for that platform at compile time.
+
+Workarounds:
+- Run inside a proper Linux userland on the device (e.g. via `proot-distro install ubuntu`), where a `GOOS=linux` Go toolchain behaves normally.
+- Use a real Linux or macOS machine instead.
+
+This is not specific to any one CrydenSync repository — it affects any Go program using `lib/pq` on Android.

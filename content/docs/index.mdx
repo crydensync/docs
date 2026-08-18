@@ -1,0 +1,56 @@
+---
+title: "CrydenSync Documentation"
+description: "CrydenSync is an embeddable, framework-agnostic authentication engine, written in Go, designed around one core idea: **you own your users.** No hosted"
+---
+
+CrydenSync is an embeddable, framework-agnostic authentication engine, written in Go, designed around one core idea: **you own your users.** No hosted auth service, no vendor lock-in, no telemetry leaving your infrastructure. You self-host it, on your own database, under your own control.
+
+This documentation set covers the entire CrydenSync ecosystem: the core engine, the CLI, the HTTP API, and the SDKs built on top of it.
+
+## What CrydenSync is
+
+A Go library (`github.com/crydensync/cryden/v2`) providing signup, login, session management, token rotation with theft detection, account lockout, password/email change flows, and email verification — all as pure, framework-agnostic logic with no assumptions about HTTP, your database driver, or your deployment shape beyond the interfaces it defines.
+
+## The ecosystem, by repository
+
+| Repository | What it is | Audience |
+|---|---|---|
+| `cryden` | The core Go engine | Go developers, embedding directly |
+| `api` | A self-hosted HTTP wrapper around the engine | Non-Go developers, or Go developers wanting a REST interface |
+| `csax` | An admin CLI for managing a CrydenSync deployment | Developers/operators — never end users of an app built on CrydenSync |
+| `sdk-js` | A JavaScript/TypeScript client for the `api` HTTP layer | Frontend and Node developers |
+| `typebook` | A reference full-stack app (Google Keep-style notes) built on CrydenSync | Proof that the whole stack works end-to-end in a real app |
+
+## How the pieces relate
+
+```
+Your app (Go)  ──imports──▶  cryden (the engine)
+Your app (any language)  ──HTTP──▶  api  ──imports──▶  cryden
+Your frontend (JS/TS)  ──uses──▶  sdk-js  ──HTTP──▶  api  ──imports──▶  cryden
+You (as an operator)  ──uses──▶  csax  ──talks directly to──▶  your Postgres database
+```
+
+The engine (`cryden`) is the only place authentication *logic* lives. Every other repository is a thin wrapper: `api` translates HTTP requests into engine function calls, `csax` translates terminal commands into engine/store calls, `sdk-js` translates JavaScript method calls into HTTP requests to `api`. Nothing is reimplemented at any layer — this is deliberate, and it's what keeps the whole ecosystem consistent as it grows.
+
+## Where to go next
+
+- **New to CrydenSync?** Start with [Philosophy](/docs/philosophy), then [Architecture](/docs/architecture).
+- **Want to build something with it?** Go to [guide/installation](/docs/guide/installation) and [guide/quick-start](/docs/guide/quick-start).
+- **Building an HTTP-facing app?** See [api/index](/docs/api).
+- **Managing a deployment?** See [cli/index](/docs/cli).
+- **Building a frontend?** See [sdk/index](/docs/sdk).
+- **Curious why something was built a certain way?** See [design-decisions](/docs/design-decisions).
+- **Want to know what's coming?** See [roadmap](/docs/roadmap).
+
+## Standard example data used throughout this documentation
+
+Every code example, test, and walkthrough in this documentation set uses the same placeholder data, so examples are consistent across the whole ecosystem:
+
+- Example emails: `proguy@example.com` and `devray@example.com`
+- Example password: `Pass@2026`
+
+These are placeholders only — never use them as real credentials in a real deployment.
+
+## Current version
+
+As of this documentation set, the engine is at `v2.0.0` (module path `github.com/crydensync/cryden/v2`). This is a full rewrite from an earlier, unpublished-lessons-learned `v1` — v2 shares no code or API surface with v1. See [design-decisions.md](/docs/design-decisions) for what changed and why.

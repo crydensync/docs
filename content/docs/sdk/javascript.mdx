@@ -1,0 +1,144 @@
+---
+title: "JavaScript/TypeScript SDK"
+description: "Package: `@crydensync/sdk`. Works in browsers and Node.js. No runtime dependencies — built on the native `fetch` API."
+---
+
+Package: `@crydensync/sdk`. Works in browsers and Node.js. No runtime dependencies — built on the native `fetch` API.
+
+## Install
+
+```bash
+npm install @crydensync/sdk
+```
+
+## Initialize
+
+```ts
+import { Cryden } from "@crydensync/sdk";
+
+const cryden = new Cryden({
+  baseUrl: "https://auth.yourapp.com", // your self-hosted `api` instance
+});
+```
+
+### Options
+
+| Option | Required | Default | Notes |
+|---|---|---|---|
+| `baseUrl` | Yes | — | The base URL of your `api` deployment |
+| `storage` | No | `localStorage` in a browser, in-memory `Map` elsewhere | A `StorageAdapter` (`get`/`set`/`remove`) for custom token persistence — see below |
+
+## Methods
+
+### `signUp(email, password): Promise<{ user_id, email }>`
+
+```ts
+await cryden.signUp("devray@example.com", "Pass@2026");
+```
+
+### `login(email, password): Promise<Tokens>`
+
+```ts
+const { accessToken, refreshToken } = await cryden.login("devray@example.com", "Pass@2026");
+```
+Tokens are stored internally by the SDK — the return value is provided for convenience/logging, not because the caller needs to manage it manually.
+
+### `logout(sessionId): Promise<void>`
+
+Revokes the specified session and clears locally stored tokens.
+
+### `logoutAll(): Promise<void>`
+
+Revokes every session for the current user and clears locally stored tokens.
+
+### `verify(): Promise<{ user_id }>`
+
+Confirms the currently stored access token is valid.
+
+### `isAuthenticated(): boolean`
+
+Returns whether a token pair is currently stored — does **not** verify the token is still valid server-side (call `verify()` for that). Useful for a quick, synchronous "is there a logged-in user" UI check.
+
+### `listSessions(): Promise<Session[]>`
+
+```ts
+const sessions = await cryden.listSessions();
+// [{ id, ip, user_agent, created_at }, ...]
+```
+
+### `revokeSession(sessionId): Promise<void>`
+
+### `changePassword(currentPassword, newPassword): Promise<void>`
+
+```ts
+await cryden.changePassword("Pass@2026", "NewPass@2027");
+```
+Clears locally stored tokens after success — the API just revoked every session for this user, including the current one, matching real engine behavior (not an SDK-specific choice). The caller must redirect to a login screen afterward.
+
+### `deleteAccount(currentPassword): Promise<void>`
+
+Irreversible. Clears locally stored tokens after success.
+
+### `requestEmailChange(newEmail): Promise<void>`
+
+### `confirmEmailChange(token): Promise<void>`
+
+Requires no prior authentication — matches the API's design, since the user may be clicking a link from an email client with no active session.
+
+```ts
+// on your app's /confirm-email route:
+const token = new URLSearchParams(window.location.search).get("token");
+await cryden.confirmEmailChange(token);
+```
+
+## Error handling
+
+```ts
+import { CrydenError } from "@crydensync/sdk";
+
+try {
+  await cryden.login(email, password);
+} catch (err) {
+  if (err instanceof CrydenError) {
+    console.log(err.code);    // e.g. "invalid_credentials"
+    console.log(err.status);  // e.g. 401
+    console.log(err.message); // human-readable, do not parse programmatically
+  }
+}
+```
+
+`err.code` is typed as a TypeScript union (`CrydenErrorCode`) matching every code documented in [api/errors.md](/docs/api/errors), plus one client-only value: `"network_error"`, used when the request never reached the server at all (e.g. no network connectivity).
+
+## Automatic silent refresh — how it works internally
+
+Every authenticated method call follows this sequence internally:
+
+1. Make the request with the currently stored access token.
+2. If the response is `401`, attempt exactly one call to `/v1/refresh` using the stored refresh token.
+3. If the refresh succeeds, store the new token pair and retry the original request once with the new access token.
+4. If the refresh itself fails, clear all stored tokens and throw the resulting `CrydenError` — the caller's `catch` block is where a redirect-to-login should happen.
+
+This is transparent to the caller — no method exists to manually trigger a refresh, because none should ever be needed.
+
+## Custom token storage
+
+```ts
+import type { StorageAdapter } from "@crydensync/sdk";
+
+class MyStorageAdapter implements StorageAdapter {
+  get(key: string): string | null { /* ... */ }
+  set(key: string, value: string): void { /* ... */ }
+  remove(key: string): void { /* ... */ }
+}
+
+const cryden = new Cryden({
+  baseUrl: "...",
+  storage: new MyStorageAdapter(),
+});
+```
+
+Two built-in adapters are exported for convenience: `LocalStorageAdapter` (the browser default) and `MemoryStorageAdapter` (the non-browser default, and useful for tests — note this does not persist across process restarts).
+
+## A note on security tradeoffs
+
+Storing tokens in `localStorage` (the browser default) is a common, well-understood pattern, but it does carry real exposure to cross-site scripting (XSS) attacks — any script able to execute in the page's context can read stored tokens. This is a known, accepted tradeoff shared by many real single-page applications, not a flaw unique to this SDK. Applications with stronger security requirements should consider a custom storage strategy (e.g. an httpOnly-cookie-based backend proxy) — the SDK's pluggable storage interface exists specifically to make that possible without forking the SDK itself.

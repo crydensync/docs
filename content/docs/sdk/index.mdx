@@ -1,0 +1,27 @@
+---
+title: "SDKs — Overview"
+description: "CrydenSync SDKs are thin client libraries for the `api` HTTP layer — they contain no authentication logic of their own. Every SDK method is a translat"
+---
+
+CrydenSync SDKs are thin client libraries for the `api` HTTP layer — they contain no authentication logic of their own. Every SDK method is a translation from a language-native function call into an HTTP request against a running `api` instance, plus client-side conveniences (automatic token storage, automatic silent token refresh).
+
+## Available and planned SDKs
+
+| Language | Status | Package |
+|---|---|---|
+| JavaScript/TypeScript | Shipped | `@crydensync/sdk` |
+| Python | Planned | Not yet built |
+
+See [javascript](/docs/sdk/javascript) for the complete JavaScript/TypeScript reference.
+
+## Why the JavaScript SDK was built first
+
+Two concrete reasons: a reference implementation already existed and was proven working (the `typebook` reference application's hand-written API client), giving the JavaScript SDK a real head start rather than a from-scratch design; and JavaScript/TypeScript is the dominant language for the frontend and full-stack web developers who are CrydenSync's most natural early adopters, particularly given the "own your users" pitch resonates most directly with teams building their own SaaS products.
+
+## Design principles shared across every SDK, present and future
+
+- **No SDK contains authentication logic.** Every SDK is a thin HTTP client against `api`. If a security-relevant behavior needs to change, it changes in the engine and API once, and every SDK inherits the fix automatically the next time it calls the API — there is no logic duplicated per language that could drift out of sync or be fixed in one language but not another.
+- **Errors are typed, not string-parsed.** Every SDK's error type carries a stable `code` field matching the API's documented error codes (see [api/errors.md](/docs/api/errors)) exactly — consuming code branches on this field, never on a human-readable message string.
+- **Token storage is pluggable, not hardcoded.** Different runtime environments (browser, Node, React Native, server-side rendering) have different appropriate storage mechanisms, and some applications have legitimate security reasons to prefer a specific one over the default. Every SDK exposes a small storage adapter interface rather than assuming `localStorage` or any other single mechanism.
+- **Automatic refresh-and-retry, once.** If a request fails because the access token expired, the SDK attempts exactly one silent refresh and retries the original request once. If the refresh itself fails, the SDK clears its stored tokens and surfaces the error — it does not retry further or enter a retry loop.
+- **Verified against a real, live `api` instance**, not just unit-tested in isolation. Every SDK's test suite includes a smoke test that runs the actual built package artifact (not just the source) against a genuinely running server, over real network calls.

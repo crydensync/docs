@@ -1,0 +1,111 @@
+---
+title: "Development"
+description: ""
+---
+
+## Working on the engine (`cryden`)
+
+```bash
+git clone https://github.com/crydensync/cryden
+cd cryden
+go mod tidy
+go build ./...
+go vet ./...
+go test ./...
+```
+
+Unit tests run entirely against in-memory stores and require no database. Postgres integration tests (in `store/postgres/*_test.go`) skip automatically (not fail) if `DATABASE_URL` is unset:
+
+```bash
+export DATABASE_URL="postgres://user:pass@localhost:5432/dbname?sslmode=disable"
+psql "$DATABASE_URL" -f store/postgres/migrations/0001_initial_schema.up.sql
+go test ./store/postgres/... -v
+```
+
+An end-to-end smoke test (signup → login → refresh rotation → reuse detection → logout, run against the in-memory store) lives at `internal/smoketest`:
+
+```bash
+go run ./internal/smoketest
+```
+
+## Working on `api`
+
+```bash
+git clone https://github.com/crydensync/api
+cd api
+go mod tidy
+go build ./...
+go vet ./...
+```
+
+To run it locally end-to-end:
+
+```bash
+psql "$DATABASE_URL" -f migrations/0001_initial_schema.up.sql
+cp .env.example .env  # fill in values
+go run .
+```
+
+Then, in a second terminal, the automated smoke test:
+
+```bash
+cd internal/smoketest
+go run . http://localhost:8080
+```
+
+This exercises the full flow over real HTTP — signup, login, session listing, refresh rotation, and reuse detection — against whatever database `DATABASE_URL` points at.
+
+## Working on `csax`
+
+```bash
+git clone https://github.com/crydensync/csax
+cd csax
+go mod tidy
+go build -o csax .
+./csax config init
+```
+
+Test against a disposable database first, not a database with real data — `csax migrate up` writes real schema changes.
+
+## Working on `sdk-js`
+
+```bash
+git clone https://github.com/crydensync/sdk-js
+cd sdk-js
+npm install
+npx tsc --noEmit   # type-check
+npm run build       # produces dist/ — ESM, CJS, and .d.ts declarations
+```
+
+The SDK's smoke test requires a live `api` instance to test against (the SDK has no logic to test in isolation — it is a thin HTTP client):
+
+```bash
+# in one terminal: a running api instance (see api's own development docs)
+# in another terminal:
+node smoketest/main.mjs http://localhost:8080
+```
+
+## Working on `typebook`
+
+```bash
+git clone https://github.com/crydensync/typebook
+cd typebook
+
+# backend
+cd backend
+cp .env.example .env
+go run .
+
+# frontend, in a second terminal
+cd frontend
+cp .env.example .env
+npm install
+npm run dev
+```
+
+## General development discipline used across this ecosystem
+
+- **Interfaces are defined before implementations are written**, in every repository, not just the engine.
+- **Every store/client implementation gets a compile-time interface assertion** (`var _ store.UserStore = (*UserStore)(nil)`) the moment it's written — this catches an implementation silently falling behind an interface change at build time rather than at runtime or not at all. This specific practice caught a real gap during development: a new interface method was added and one implementation was not updated to match, and the compile-time assertion caught it immediately.
+- **Prove behavior by actually running it**, not just by passing a type-check or a build. Across this ecosystem's development, several real bugs were only caught by executing code end-to-end: a JSON field-casing mismatch between the engine's Go struct and the documented API contract, a session-listing endpoint that would have leaked a hashed token to clients, and a CLI helper function with an incorrect type signature. None of these were caught by code review alone.
+- **New code is built against the most local, fastest-to-run dependency first** (in-memory stores before Postgres, a stable tagged engine version before building a wrapper against a moving target) to avoid rework as designs settle.
