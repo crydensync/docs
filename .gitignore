@@ -2,4 +2,4 @@ node_modules
 .next
 .source
 .env
-.venv
+my_node_env
