@@ -1,0 +1,35 @@
+---
+title: "Rate Limiting"
+description: "Two independent rate-limiting layers apply to the API, for different purposes."
+---
+
+Two independent rate-limiting layers apply to the API, for different purposes.
+
+## Layer 1: Engine-level, per-user
+
+Built into the `cryden` engine itself, applied specifically to `SignUp` and `Login`. Keyed by a combination of caller IP and email address. Default: 10 attempts per minute (configurable via `Config.RateLimitAttempts` / `Config.RateLimitWindow` when constructing the engine).
+
+**Purpose:** slow down credential-stuffing and brute-force attempts against specific accounts or from specific sources, at the exact operations where that matters most.
+
+**Distinct from account lockout:** this rate limiter only slows down rapid attempts within a short window — it does not lock an account. Account lockout (a separate mechanism — see [design-decisions.md](/docs/design-decisions)) is what blocks an account after repeated failures, and is database-backed rather than in-memory.
+
+## Layer 2: API-level, per-IP, whole-surface
+
+Implemented in the `api` repository itself (`httpapi/ratelimit.go`), applied to every request across the entire API, regardless of endpoint. Default: 100 requests per minute per IP address, configurable via the `EDGE_RATE_LIMIT` environment variable.
+
+**Purpose:** a coarse guard against any client hammering the API broadly — not specific to login/signup, and not something the framework-agnostic engine itself should have an opinion about, since it's a transport-layer (HTTP-specific) concern.
+
+CORS preflight (`OPTIONS`) requests are not counted against this limit, since browsers issue these automatically and they shouldn't consume a caller's real request budget.
+
+## Both layers return the same error code
+
+Both layers surface `rate_limited` (`429`) to the client — the distinction between "the engine's per-user limiter" and "the API's per-IP edge limiter" only matters for server-side debugging, not for client-side error handling.
+
+## A known, explicitly documented limitation of both layers
+
+Both rate limiters (the engine's and the API's) are **in-memory, per-process implementations.** This means:
+
+- Limits reset whenever the process restarts.
+- If a deployment runs more than one instance behind a load balancer, each instance maintains its own independent counters — the effective limit across the whole deployment becomes roughly `configured limit × number of instances`, not the configured limit.
+
+This is a known, accepted tradeoff for a single-instance deployment, not a bug. For a horizontally-scaled deployment where this matters, a shared-state implementation (e.g. Redis-backed) is the natural upgrade path — this is not built as of the current version, and would be implemented by providing an alternate implementation of the relevant rate limiter interface, following the same interface-first pattern used throughout the ecosystem.

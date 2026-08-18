@@ -1,0 +1,100 @@
+---
+title: "Configuration"
+description: ""
+---
+
+## Engine configuration (`cryden.Config`)
+
+```go
+type Config struct {
+	// Required — no default exists for any of these. cryden.New()
+	// returns an error immediately if any are missing.
+	JWTSecret string
+	Users     store.UserStore
+	Sessions  store.SessionStore
+	Audit     store.AuditStore
+
+	// Optional — only needed if using RequestEmailChange/ConfirmEmailChange.
+	Verifications store.VerificationStore
+	EmailSender   notify.EmailSender
+
+	// Optional — sensible defaults applied if left unset.
+	AccessTokenTTL         time.Duration // default: 15 minutes
+	BcryptCost             int           // default: 10
+	RefreshTokenByteLength int           // default: 32
+	RateLimitAttempts      int           // default: 10
+	RateLimitWindow        time.Duration // default: 1 minute
+	LockoutThreshold       int           // default: 5 failed attempts
+	LockoutDuration        time.Duration // default: 15 minutes
+	Logger                 logger.Logger // default: ConsoleJSONLogger
+}
+```
+
+### Why some fields are required and others default
+
+`JWTSecret` and the three core stores (`Users`, `Sessions`, `Audit`) are security-critical or structurally necessary — the engine cannot safely guess a value for them, so it refuses to start without them. Every other field is a tuning knob where a reasonable default exists and getting it slightly wrong is not a security failure, only a suboptimal default — see [design-decisions.md](/docs/design-decisions) for the reasoning behind this split.
+
+### Wiring Postgres
+
+```go
+import (
+	"database/sql"
+	_ "github.com/lib/pq"
+	"github.com/crydensync/cryden/v2/store/postgres"
+)
+
+db, _ := sql.Open("postgres", os.Getenv("DATABASE_URL"))
+
+engine, err := cryden.New(cryden.Config{
+	JWTSecret: os.Getenv("JWT_SECRET"),
+	Users:     postgres.NewUserStore(db),
+	Sessions:  postgres.NewSessionStore(db),
+	Audit:     postgres.NewAuditStore(db),
+})
+```
+
+### Wiring email verification
+
+```go
+type myEmailSender struct{ /* your provider's client */ }
+
+func (s *myEmailSender) SendVerification(ctx context.Context, to, rawToken string) error {
+	// Build your own URL, e.g. https://yourapp.com/verify?token=" + rawToken
+	// and send it via your provider (Resend, SES, SendGrid, etc.)
+}
+
+engine, err := cryden.New(cryden.Config{
+	// ...required fields...
+	Verifications: postgres.NewVerificationStore(db),
+	EmailSender:   &myEmailSender{},
+})
+```
+
+Calling `RequestEmailChange` without both `Verifications` and `EmailSender` configured returns `cryden.ErrEmailChangeNotConfigured` rather than panicking.
+
+## `api` repository environment variables
+
+| Variable | Required | Default | Notes |
+|---|---|---|---|
+| `DATABASE_URL` | Yes | — | Postgres connection string |
+| `JWT_SECRET` | Yes | — | Signs access tokens |
+| `CORS_ORIGINS` | Yes | — | Comma-separated allowed origins. No wildcard default — an API handling auth tokens should never allow every origin. |
+| `PORT` | No | `8080` | |
+| `ACCESS_TOKEN_TTL_MINUTES` | No | `15` | |
+| `EDGE_RATE_LIMIT` | No | `100` | Requests per minute, per IP, across the whole API surface — separate from the engine's own per-user login/signup rate limiting |
+
+## `csax` CLI configuration
+
+Written by `csax config init` to a local `.env` file:
+
+| Variable | Notes |
+|---|---|
+| `DATABASE_URL` | Same database your `api`/engine-embedding app uses |
+| `JWT_SECRET` | Needed for any command that constructs a full engine instance (session revocation, etc.) — not needed for pure read commands |
+| `MIGRATIONS_DIR` | Default `./migrations` — should point at a folder containing both the engine's migration and your own app's migrations |
+
+## Security notes on configuration
+
+- Never commit `.env` files. Every repository in the ecosystem ships a `.env.example` with variable names but no real values, and a `.gitignore` excluding `.env`.
+- Generate `JWT_SECRET` with a real source of randomness — e.g. `openssl rand -base64 32` — never a guessable string.
+- In a real deployment, prefer setting environment variables directly (most hosting platforms — Railway, Render, Fly.io, etc. — support this natively) over relying on a `.env` file being present at runtime.

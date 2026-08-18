@@ -1,0 +1,105 @@
+---
+title: "Quick Start"
+description: ""
+---
+
+## Using the engine directly (Go)
+
+This example uses the in-memory store — no database required, good for trying the engine out or writing tests.
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/crydensync/cryden/v2"
+	"github.com/crydensync/cryden/v2/store/memory"
+)
+
+func main() {
+	ctx := context.Background()
+
+	engine, err := cryden.New(cryden.Config{
+		JWTSecret: "a-real-secret-in-production-not-this",
+		Users:     memory.NewUserStore(),
+		Sessions:  memory.NewSessionStore(),
+		Audit:     memory.NewAuditStore(),
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	user, err := cryden.SignUp(ctx, engine, "devray@example.com", "Pass@2026", "127.0.0.1")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("created user:", user.ID)
+
+	tokens, err := cryden.Login(ctx, engine, "devray@example.com", "Pass@2026", "127.0.0.1", "example-client")
+	if err != nil {
+		panic(err)
+	}
+
+	userID, err := cryden.VerifyToken(engine, tokens.AccessToken)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("verified user:", userID)
+}
+```
+
+For a real deployment, swap `store/memory` for `store/postgres` — see [Configuration](/docs/guide/configuration).
+
+## Using the HTTP API directly (any language, via curl)
+
+Assumes a running `api` instance at `http://localhost:8080` — see [Installation](/docs/guide/installation).
+
+```bash
+curl -X POST http://localhost:8080/v1/signup \
+  -H "Content-Type: application/json" \
+  -d '{"email": "devray@example.com", "password": "Pass@2026"}'
+
+curl -X POST http://localhost:8080/v1/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "devray@example.com", "password": "Pass@2026"}'
+# → {"data": {"access_token": "...", "refresh_token": "..."}}
+
+curl http://localhost:8080/v1/sessions \
+  -H "Authorization: Bearer <access_token from above>"
+```
+
+See [api/index.md](/docs/api) for the full endpoint reference.
+
+## Using the JavaScript SDK
+
+```js
+import { Cryden } from "@crydensync/sdk";
+
+const cryden = new Cryden({ baseUrl: "http://localhost:8080" });
+
+await cryden.signUp("devray@example.com", "Pass@2026");
+await cryden.login("devray@example.com", "Pass@2026");
+
+const sessions = await cryden.listSessions();
+console.log(sessions);
+```
+
+See [sdk/javascript.md](/docs/sdk/javascript) for the complete method reference.
+
+## Using the CLI
+
+```bash
+csax config init
+csax migrate up
+csax users get devray@example.com
+csax sessions list --user devray@example.com
+```
+
+See [cli/commands.md](/docs/cli/commands) for every command.
+
+## What to read next
+
+- Building a real app? See [Configuration](/docs/guide/configuration) for the full `Config` reference and [Development](/docs/guide/development) for local dev setup.
+- Want to understand *why* the engine behaves the way it does (e.g. why `ChangePassword` logs you out)? See [design-decisions.md](/docs/design-decisions).

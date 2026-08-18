@@ -1,0 +1,31 @@
+---
+title: "Error Codes"
+description: "Every error response follows `{'error': {'code': '...', 'message': '...'}}`. This page lists every `code` value the API can return, its HTTP status, a"
+---
+
+Every error response follows `{"error": {"code": "...", "message": "..."}}`. This page lists every `code` value the API can return, its HTTP status, and what it means. Client code should branch on `code`, never on `message`.
+
+| Code | HTTP Status | Meaning |
+|---|---|---|
+| `bad_request` | 400 | The request body was malformed or missing required fields. Not an engine error — this is caught before any engine call is made. |
+| `missing_auth_header` | 401 | An authenticated endpoint was called without a valid `Authorization: Bearer <token>` header. |
+| `invalid_credentials` | 401 | Login failed — either the email doesn't match any account, or the password is wrong. Deliberately identical for both cases, to prevent an attacker from enumerating valid email addresses. See [design-decisions.md](/docs/design-decisions). |
+| `invalid_access_token` | 401 | The presented access token is malformed, expired, or signed with the wrong secret. |
+| `invalid_token` | 401 | The presented refresh token does not correspond to any known session. |
+| `token_reused` | 401 | The presented refresh token had already been rotated away (used once already). This is a theft-detection signal — the engine has already revoked the entire session family this token belonged to. See [authentication.md](/docs/api/authentication). |
+| `account_locked` | 403 | Too many recent failed login attempts — the account is temporarily locked. Note this does reveal that the account exists (unlike `invalid_credentials`), which is an accepted tradeoff of lockout messaging generally. |
+| `session_not_owned` | 403 | An attempt to revoke or act on a session that does not belong to the authenticated user. |
+| `not_found` | 404 | The requested resource (e.g. a session ID) does not exist. |
+| `user_exists` | 409 | Signup or email-change attempted with an email already in use by another account. |
+| `verification_token_invalid` | 400 | An email-confirmation token is malformed, unrecognized, or has already been used (tokens are single-use). |
+| `verification_token_expired` | 400 | An email-confirmation token was valid but has expired. |
+| `rate_limited` | 429 | Too many requests. Can originate from either the engine's own per-user login/signup limiter, or the API's own coarser per-IP edge limiter — both surface this same code to the client; the distinction only matters server-side. |
+| `internal_error` | 500 | An unexpected, unmapped error occurred. The real underlying error is logged server-side; the client deliberately never receives internal error details (e.g. raw database errors), to avoid leaking implementation details. |
+
+## Handling `token_reused` specifically
+
+This is the one error code that requires different client handling than a simple retry. If `/v1/refresh` returns `token_reused`, it means the entire session family has already been revoked server-side — retrying with any other token from that same login session will also fail. The correct client response is to clear all locally stored tokens and force the user through a full login again, not to retry.
+
+## Handling `account_locked`
+
+Unlike `invalid_credentials`, this code does confirm the account exists. Client-facing messaging should account for this — e.g. showing "too many attempts, try again later" rather than repeating the same generic message used for wrong credentials, since the two situations warrant different user guidance even though they share similar security sensitivity.

@@ -1,0 +1,4 @@
+{
+  "title": "CrydenSync",
+  "pages": ["index", "philosophy", "architecture", "design-decisions", "roadmap", "guide", "api", "cli", "sdk"]
+}

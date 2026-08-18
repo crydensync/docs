@@ -1,0 +1,188 @@
+---
+title: "API Endpoints"
+description: "All paths are relative to `/v1`. All request/response bodies are JSON. Examples use `devray@example.com` / `Pass@2026` as placeholder credentials."
+---
+
+All paths are relative to `/v1`. All request/response bodies are JSON. Examples use `devray@example.com` / `Pass@2026` as placeholder credentials.
+
+## `POST /signup`
+
+Public. Creates a new user.
+
+**Request:**
+```json
+{ "email": "devray@example.com", "password": "Pass@2026" }
+```
+
+**Response `201`:**
+```json
+{ "data": { "user_id": "019f...", "email": "devray@example.com" } }
+```
+
+**Possible errors:** `bad_request`, `user_exists` (`409`), `rate_limited` (`429`)
+
+## `POST /login`
+
+Public. Authenticates and returns a token pair.
+
+**Request:**
+```json
+{ "email": "devray@example.com", "password": "Pass@2026" }
+```
+
+**Response `200`:**
+```json
+{ "data": { "access_token": "eyJ...", "refresh_token": "a1b2..." } }
+```
+
+**Possible errors:** `invalid_credentials` (`401`), `account_locked` (`403`), `rate_limited` (`429`)
+
+## `POST /refresh`
+
+Public. Rotates a refresh token for a new pair.
+
+**Request:**
+```json
+{ "refresh_token": "a1b2..." }
+```
+
+**Response `200`:** same shape as `/login`.
+
+**Possible errors:** `invalid_token` (`401`), `token_reused` (`401`) — see [authentication.md](/docs/api/authentication) for what `token_reused` means and how a client should respond to it.
+
+## `POST /logout`
+
+Requires auth. Revokes one session.
+
+**Request:**
+```json
+{ "session_id": "019f..." }
+```
+
+**Response `200`:**
+```json
+{ "data": { "status": "logged out" } }
+```
+
+**Possible errors:** `session_not_owned` (`403`), `not_found` (`404`)
+
+## `POST /logout-all`
+
+Requires auth. Revokes every session for the authenticated user. No request body.
+
+**Response `200`:**
+```json
+{ "data": { "status": "logged out of all devices" } }
+```
+
+## `GET /verify`
+
+Requires auth. Confirms the presented access token is valid.
+
+**Response `200`:**
+```json
+{ "data": { "user_id": "019f..." } }
+```
+
+## `GET /sessions`
+
+Requires auth. Lists every active session for the authenticated user.
+
+**Response `200`:**
+```json
+{
+  "data": [
+    { "id": "019f...", "ip": "1.2.3.4", "user_agent": "Mozilla/5.0...", "created_at": "2026-08-14T08:32:38Z" }
+  ]
+}
+```
+
+Note: the session's refresh token hash is deliberately never included in this response — see [design-decisions.md](/docs/design-decisions).
+
+## `DELETE /sessions/{id}`
+
+Requires auth. Revokes a specific session.
+
+**Response `200`:**
+```json
+{ "data": { "status": "session revoked" } }
+```
+
+**Possible errors:** `session_not_owned` (`403`) — attempting to revoke a session that does not belong to the authenticated user.
+
+## `POST /change-password`
+
+Requires auth. Changes the authenticated user's password.
+
+**Request:**
+```json
+{ "current_password": "Pass@2026", "new_password": "NewPass@2027" }
+```
+
+**Response `200`:**
+```json
+{ "data": { "status": "password changed, please log in again" } }
+```
+
+Important: this revokes **every** session for the user, including the one making this request. The client must discard its tokens and prompt for a fresh login.
+
+**Possible errors:** `invalid_credentials` (`401`) — wrong current password.
+
+## `POST /delete-account`
+
+Requires auth. Permanently deletes the authenticated user's account.
+
+**Request:**
+```json
+{ "current_password": "Pass@2026" }
+```
+
+**Response `200`:**
+```json
+{ "data": { "status": "account deleted" } }
+```
+
+This is irreversible. All sessions, and the user's own data (subject to `ON DELETE CASCADE` foreign keys in the schema), are removed.
+
+## `POST /email/request-change`
+
+Requires auth. Starts an email change — sends a verification token to the new address. The email is **not** changed yet.
+
+**Request:**
+```json
+{ "new_email": "proguy@example.com" }
+```
+
+**Response `200`:**
+```json
+{ "data": { "status": "verification email sent" } }
+```
+
+**Possible errors:** `user_exists` (`409`) — the new address already belongs to another account.
+
+## `POST /email/confirm-change`
+
+Public — deliberately requires no `Authorization` header, since the user may be clicking a link from an email client with no active session. The token itself is the proof of authorization.
+
+**Request:**
+```json
+{ "token": "<raw token from the verification email>" }
+```
+
+**Response `200`:**
+```json
+{ "data": { "status": "email changed" } }
+```
+
+**Possible errors:** `verification_token_invalid` (`400`) — invalid or already used. `verification_token_expired` (`400`).
+
+## `GET /health`
+
+Public. Confirms the server can reach its database.
+
+**Response `200`:**
+```json
+{ "data": { "status": "ok" } }
+```
+
+**Response `503`** if the database is unreachable.
