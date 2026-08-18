@@ -1,14 +1,24 @@
 ---
 title: "CLI Commands"
 description: "Examples use `devray@example.com` as the placeholder user throughout."
----                                                             
+---
+
 Examples use `devray@example.com` as the placeholder user throughout.
 
 ## `csax config init`
-                                                                Interactive setup. Prompts for a database connection string and a JWT secret (leave blank to auto-generate one), writes both to a local `.env` file.
+
+Interactive setup. Prompts for a database connection string and a JWT secret (leave blank to auto-generate one), writes both to a local `.env` file.
 
 ```
-$ csax config init                                              Database connection string: postgresql://user:pass@host:5432/dbname?sslmode=require                                             JWT secret (leave blank to generate one): [enter]               Generated a new JWT secret.                                     ✔ Wrote .env                                                    ```                                                                                                                             If `.env` already exists, you'll be prompted before it's overwritten.                                                           
+$ csax config init
+Database connection string: postgresql://user:pass@host:5432/dbname?sslmode=require
+JWT secret (leave blank to generate one): [enter]
+Generated a new JWT secret.
+✔ Wrote .env
+```
+
+If `.env` already exists, you'll be prompted before it's overwritten.
+
 ## `csax migrate status`
 
 Shows which migration files (in `MIGRATIONS_DIR`, default `./migrations`) have been applied, based on `csax`'s own tracking table (`csax_migrations`), created automatically on first use.
@@ -37,33 +47,7 @@ $ csax migrate down
 Rolling back 0002_notes.up.sql... done
 ```
 
-## `csax users list [--limit N] [--offset N] [--json]`
-
-Lists every user, newest first. Default limit is 50. Reads the schema directly via SQL (see the note on this in [cli/index.md](/docs/cli)) rather than through the engine's store interfaces.
-
-```
-$ csax users list
-019f9635-...  devray@example.com                      2026-08-11 14:20
-019f9636-...  proguy@example.com                       2026-08-11 15:02  [locked]
-
-Showing 2 (limit=50 offset=0) — use --limit/--offset to page.
-```
-
-With `--json`, output is a JSON array (empty array `[]`, not `null`, if there are no users) — safe to pipe into `jq` or any script:
-
-```
-$ csax users list --json --limit 1
-[
-  {
-    "id": "019f9635-9d49-7a55-95e9-ff25259469f4",
-    "email": "devray@example.com",
-    "created_at": "2026-08-11T14:20:00Z",
-    "locked": false
-  }
-]
-```
-
-## `csax users get <email> [--json]`
+## `csax users get <email>`
 
 Shows a user's ID, creation date, lock status, and active session count.
 
@@ -76,19 +60,6 @@ Locked:   no (failed attempts: 0)
 Sessions: 2 active
 ```
 
-`--json` returns the same information as a structured object, for scripting.
-
-## `csax users create <email> <password>`
-
-Creates a user directly, bypassing whatever signup flow your application normally uses. Calls the engine's real `cryden.SignUp` — the same function your app's own signup form calls — so validation, rate limiting, and audit logging all behave identically to a normal signup.
-
-```
-$ csax users create proguy@example.com "Pass@2026"
-✔ Created user
-ID:    01a00c54-bc49-7609-9b67-905ab30c2d68
-Email: proguy@example.com
-```
-
 ## `csax users unlock <email>`
 
 Clears an account lockout early — resets both the failed-attempt counter and the lock itself. Internally, this reuses the engine's existing `ResetFailedAttempts` store method (the same one called automatically on a successful login) rather than introducing new lockout-clearing logic.
@@ -98,9 +69,9 @@ $ csax users unlock devray@example.com
 ✔ Unlocked devray@example.com
 ```
 
-## `csax sessions list --user <email> [--json]`
+## `csax sessions list --user <email>`
 
-Lists every active session for a user: session ID, device (user agent), IP, and creation time. `--json` returns the same data as a structured array.
+Lists every active session for a user: session ID, device (user agent), IP, and creation time.
 
 ```
 $ csax sessions list --user devray@example.com
@@ -135,31 +106,6 @@ $ csax audit tail --user devray@example.com
 2026-08-14 08:05  login_success             ip=5.6.7.8
 2026-08-13 22:10  login_success             ip=1.2.3.4
 2026-08-12 03:41  token_reuse_detected       ip=9.9.9.9  ⚠
-```
-
-## `csax audit search --event <type> [--limit N]`
-
-Searches audit events by type **across every user**, not just one — a system-wide equivalent to `audit tail`. Useful for spotting security-relevant events without already knowing which user to look at.
-
-```
-$ csax audit search --event token_reuse_detected
-2026-08-12 03:41  token_reuse_detected      user=devray@example.com ip=9.9.9.9  ⚠
-```
-
-Common event types: `signup_success`, `login_success`, `login_failed`, `token_reuse_detected`, `account_locked`, `password_changed`, `email_changed`, `account_deleted`.
-
-## `csax stats`
-
-A quick operational snapshot: total users, active sessions, signups today, failed logins today, and any currently locked accounts.
-
-```
-$ csax stats
-CrydenSync — system stats
-Total users:          142
-Active sessions:      58
-Signups today:        3
-Failed logins today:  11
-Locked accounts:      0
 ```
 
 ## `csax health`

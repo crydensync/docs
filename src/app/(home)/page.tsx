@@ -63,7 +63,9 @@ export default function HomePage() {
         </Link>
       </div>
 
-      {/* */}
+      {/* Community links — TODO: replace every href below with the real
+          invite/handle once created. Left as clearly-marked placeholders
+          rather than guessed URLs, so nothing broken ships by accident. */}
       <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs text-fd-muted-foreground">
         <a
           href="https://github.com/crydensync/cryden" // TODO: confirm this is the canonical repo to star
@@ -75,7 +77,7 @@ export default function HomePage() {
         </a>
         <span className="text-fd-border">·</span>
         <a
-          href="https://discord.gg/xUCYcDBAWx"
+          href="https://discord.gg/TODO-REPLACE-WITH-REAL-INVITE"
           target="_blank"
           rel="noreferrer"
           className="hover:text-fd-foreground"
@@ -84,7 +86,7 @@ export default function HomePage() {
         </a>
         <span className="text-fd-border">·</span>
         <a
-          href="https://chat.whatsapp.com/IkPWOYlnr4DI6zTzEC0g8m"
+          href="https://chat.whatsapp.com/TODO-REPLACE-WITH-REAL-INVITE"
           target="_blank"
           rel="noreferrer"
           className="hover:text-fd-foreground"
@@ -93,7 +95,7 @@ export default function HomePage() {
         </a>
         <span className="text-fd-border">·</span>
         <a
-          href="https://x.com/CrydenSync"
+          href="https://x.com/TODO_REPLACE_HANDLE"
           target="_blank"
           rel="noreferrer"
           className="hover:text-fd-foreground"

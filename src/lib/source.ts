@@ -40,11 +40,6 @@ function buildTree(dirPath: string, urlPrefix: string[]): any[] {
   const meta = findMeta(dirPath);
   const order: string[] = meta?.pages ?? [];
 
-  const directChildDocs = allDocs.filter((d) => {
-    const parentDir = d.slug.slice(0, -1).join("/");
-    return parentDir === dirPath && d.slug.length === urlPrefix.length + 1;
-  });
-
   const childDirs = new Set(
     allDocs
       .filter((d) => d.slug.length > urlPrefix.length + 1)
@@ -52,11 +47,34 @@ function buildTree(dirPath: string, urlPrefix: string[]): any[] {
       .filter((dir) => dir !== dirPath)
   );
 
+  // Used only for the catch-all step below (pages not explicitly listed in
+  // meta.json). Must exclude folder index pages: e.g. api/index.mdx has its
+  // trailing "index" stripped, leaving slug ["api"] — the same length a
+  // genuine top-level page would have, and the same path as the "api"
+  // folder itself. Without excluding it here, every folder's overview page
+  // gets appended a second time as a stray sibling after its own folder.
+  const directChildDocs = allDocs.filter((d) => {
+    const parentDir = d.slug.slice(0, -1).join("/");
+    const selfPath = d.slug.join("/");
+    return (
+      parentDir === dirPath &&
+      d.slug.length === urlPrefix.length + 1 &&
+      !childDirs.has(selfPath)
+    );
+  });
+
   const nodes: any[] = [];
   const seen = new Set<string>();
 
   const pushDocNode = (name: string) => {
-    const d = directChildDocs.find((d) => d.slug[d.slug.length - 1] === name || (d.slug.length === urlPrefix.length && name === "index"));
+    // "index" pages live one slug segment shallower than everything else in
+    // this folder (content/docs/api/index.mdx has slug ["api"], not
+    // ["api","index"]), so directChildDocs — which requires
+    // slug.length === urlPrefix.length + 1 — can never contain them. Look
+    // these up directly against allDocs instead, using the exact slug each
+    // case implies, so folder overview pages actually make it into the tree.
+    const targetSlug = name === "index" ? urlPrefix : [...urlPrefix, name];
+    const d = allDocs.find((d) => d.slug.join("/") === targetSlug.join("/"));
     if (d && !seen.has(d.url)) {
       seen.add(d.url);
       nodes.push({ type: "page", name: d.doc.title, url: d.url });
@@ -76,8 +94,20 @@ function buildTree(dirPath: string, urlPrefix: string[]): any[] {
   };
 
   for (const name of order) {
-    pushFolderNode(name);
-    pushDocNode(name);
+    // A name in meta.json's "pages" list is either a folder or a page, never
+    // both — but calling both push functions for every name isn't actually
+    // safe to do unconditionally: an entry like "api" is meant to reference
+    // the api/ folder, yet api/index.mdx's own (index-stripped) slug is
+    // ["api"], the same slug pushDocNode would look for if "api" were a page
+    // name. Calling both meant the folder's overview page got inserted a
+    // second time as a sibling right after its own folder. Decide which one
+    // "name" refers to before pushing, so each entry adds exactly one node.
+    const folderDir = dirPath ? `${dirPath}/${name}` : name;
+    if (childDirs.has(folderDir)) {
+      pushFolderNode(name);
+    } else {
+      pushDocNode(name);
+    }
   }
 
   // catch anything not explicitly ordered in meta.json's "pages" list

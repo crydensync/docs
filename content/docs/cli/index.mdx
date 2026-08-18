@@ -1,6 +1,6 @@
 ---
 title: "CLI (`csax`) — Overview"
-description: "`csax` is an administrative command-line tool for managing a CrydenSync deployment — inspecting users, managing sessions, reviewing audit logs, and ru"
+description: "`csax` is an administrative command-line tool for managing a CrydenSync deployment — inspecting users, managing sessions, reviewing audit logs, and running migrations."
 ---
 
 `csax` is an administrative command-line tool for managing a CrydenSync deployment — inspecting users, managing sessions, reviewing audit logs, and running database migrations.
@@ -11,10 +11,9 @@ Developers and operators managing their own CrydenSync-backed deployment — com
 
 ## Design principles
 
-- **Zero engine *code* changes.** Every `csax` command uses either the engine's already-published public API (`cryden.*` facade functions, for anything requiring ownership checks or other domain logic) or — for a small number of read-only, system-wide commands the engine's store interfaces don't support (`users list`, `stats`, `audit search`) — direct SQL against the known, documented Postgres schema. No engine Go code was modified or added specifically to support the CLI. See [design-decisions.md](/docs/design-decisions).
+- **Zero engine changes.** Every `csax` command is built entirely on the engine's already-published, public API and existing store methods. No engine code was modified or added specifically to support the CLI — this was a deliberate scope boundary for the CLI's first release, not an oversight. See [design-decisions.md](/docs/design-decisions).
 - **No CLI framework dependency.** `csax` is built using only Go's standard library (`flag`, `os.Args`-based dispatch) — consistent with the engine's own dependency-light philosophy.
-- **Ownership-checked operations go through the engine, not raw storage.** Any command that revokes a session, for example, calls `cryden.RevokeSession` (which enforces that the session belongs to the specified user) rather than calling `SessionStore.Revoke` directly, which would bypass that check. Direct SQL is used only for commands that are read-only aggregates/listings with no ownership semantics to enforce (see above).
-- **Colored, human-readable output by default, with a `--json` escape hatch.** Success/warning/error output uses color for readability in a terminal, and is automatically disabled when output isn't a real terminal (e.g. piped to a file). Commands that return structured data (`users get`, `users list`, `sessions list`) support a `--json` flag for scripting against `csax` output directly.
+- **Ownership-checked operations go through the engine, not raw storage.** Any command that revokes a session, for example, calls `cryden.RevokeSession` (which enforces that the session belongs to the specified user) rather than calling `SessionStore.Revoke` directly, which would bypass that check.
 
 ## Installation
 
@@ -27,22 +26,18 @@ go install github.com/crydensync/csax@latest
 ```bash
 csax config init                                    # interactive setup, writes .env
 csax migrate status|up|down                          # database migrations
-csax users list [--limit N] [--offset N] [--json]     # every user, newest first
-csax users get <email> [--json]                        # user details
-csax users create <email> <password>                    # create a user directly
-csax users unlock <email>                                # clear a lockout early
-csax sessions list --user <email> [--json]
+csax users get <email>                                # user details
+csax users unlock <email>                              # clear a lockout early
+csax sessions list --user <email>
 csax sessions revoke <session-id> --user <email>
 csax sessions revoke-all --user <email>
 csax audit tail --user <email> [--limit N]
-csax audit search --event <type> [--limit N]              # system-wide, across all users
-csax stats                                                  # total users, active sessions, etc.
 csax health
 csax version
 ```
 
 See [commands.md](/docs/cli/commands) for full detail on every command, and [configuration.md](/docs/cli/configuration) for setup.
 
-## A note on `users list`, `stats`, and `audit search`
+## A known, deliberate scope gap
 
-These three commands need data the engine's store interfaces don't currently expose — there's no `UserStore` method to enumerate every user, and `AuditStore.ListByUser` only supports per-user queries, not a system-wide search. Rather than add new engine interface methods for CLI-only convenience, these three commands query the known, documented Postgres schema directly via SQL, the same way `csax migrate` already does. If the engine's public API is ever extended with equivalent methods (a real `ListAll`, for example), these commands would be updated to call them instead — the CLI-facing behavior wouldn't change, only what's happening underneath.
+`csax users list` (enumerating every user in the system) does not exist in the current version. The engine's `UserStore` interface has no method for listing all users — only single-user lookups (`GetByEmail`, `GetByID`) exist. Adding this would require an engine change, which was deliberately deferred rather than mixed into the CLI's zero-engine-change first release. This is documented here explicitly so it is understood as a known boundary, not a bug to report.
