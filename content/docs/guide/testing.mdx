@@ -1,0 +1,55 @@
+---
+title: "Testing"
+description: ""
+---
+
+## The engine's test strategy
+
+Three layers, each proving something the others cannot:
+
+1. **Unit tests per package**, run against in-memory store implementations. Fast, no external dependencies, cover the majority of logic including edge cases (algorithm-confusion JWT rejection, ownership-mismatch rejection on session revocation, reuse detection across a multi-step rotation chain — not just the immediately-prior token, but a token two rotations stale).
+2. **Postgres integration tests**, run against a real, live Postgres database. These specifically exist because unit tests against an in-memory store cannot prove anything about real SQL correctness or real transaction behavior. The single most important test in this category proves that refresh token rotation is genuinely atomic under a real database transaction — that a failed rotation attempt rolls back completely rather than partially applying.
+3. **An end-to-end smoke test**, exercising the full public API surface (signup, duplicate-signup rejection, login, wrong-password rejection, token verification, refresh rotation, reuse detection killing an entire session family — including a token that had already legitimately rotated forward — session listing, logout) as a single realistic sequence, the way a real consumer would actually call the engine.
+
+## Why Postgres integration tests matter specifically
+
+A real, previously-caught example: the engine's `UserStore` interface gained three new methods (for account lockout) during development. The Postgres implementation initially did not implement them — this compiled without error, because nothing forced a check that the implementation still satisfied the interface. Adding a compile-time assertion (`var _ store.UserStore = (*UserStore)(nil)`) immediately turned this into a build failure instead of a silent gap. This is why every store implementation across the ecosystem carries this assertion.
+
+## The `api` repository's test strategy
+
+`api` has no meaningful logic of its own to unit-test in isolation — every handler is a thin translation layer. Its test strategy is instead a single, thorough, automated end-to-end smoke test (`internal/smoketest`) that starts from nothing (a fresh signup) and exercises the entire public HTTP surface over real network calls against a live server, including the reuse-detection property. CI runs this test on every push: spins up a real Postgres container, applies migrations, starts the actual compiled server binary, and runs the smoke test against it — not a mock, not an in-process handler call, a real HTTP round trip.
+
+## The `sdk-js` package's test strategy
+
+Same principle: a Node-based smoke test (`smoketest/main.mjs`) that imports the **actual built package artifact** (`dist/index.js` — the same file a real `npm install` would deliver, not the TypeScript source) and runs it against a live `api` instance. This specifically validates that the SDK's pluggable storage design works in practice (the smoke test explicitly uses the in-memory storage adapter, since Node has no `localStorage`) and that typed error codes correctly propagate all the way from a Go sentinel error, through the API's error-mapping table, to a caught JavaScript exception.
+
+## Running the full ecosystem's tests locally, in sequence
+
+```bash
+# 1. Engine — unit tests (no DB needed)
+cd cryden && go test ./...
+
+# 2. Engine — Postgres integration tests
+export DATABASE_URL="postgres://user:pass@localhost:5432/dbname?sslmode=disable"
+psql "$DATABASE_URL" -f store/postgres/migrations/0001_initial_schema.up.sql
+go test ./store/postgres/... -v
+
+# 3. api — smoke test against a live instance
+cd ../api
+psql "$DATABASE_URL" -f migrations/0001_initial_schema.up.sql
+DATABASE_URL="$DATABASE_URL" JWT_SECRET=test-secret CORS_ORIGINS=http://localhost:5173 go run . &
+sleep 2
+cd internal/smoketest && go run . http://localhost:8080
+
+# 4. sdk-js — smoke test against the same live api instance
+cd ../../../sdk-js
+npm install && npm run build
+node smoketest/main.mjs http://localhost:8080
+```
+
+## What has NOT been tested, stated plainly
+
+- No external, professional security audit has been performed on any repository in this ecosystem.
+- No load/stress testing has been performed — the engine's and API's rate limiters have known correctness (they do limit requests as configured), but their behavior under sustained high concurrency has not been specifically measured.
+- The `csax` CLI's admin commands (`migrate`, `users`, `sessions`, `audit`) have been verified to build, vet, and run their non-database-touching paths (usage text, `config init`, version output) correctly, but have not yet been run against a live Postgres database as of this documentation's writing — this is a known, explicitly flagged gap, not an oversight being hidden.
+- Real production traffic patterns have not yet informed any default configuration value (rate limit thresholds, lockout thresholds, token TTLs) — current defaults are reasonable engineering estimates, not empirically tuned figures.

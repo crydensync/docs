@@ -1,0 +1,118 @@
+---
+title: "Architecture"
+description: ""
+---
+
+## Design principles
+
+CrydenSync's core engine is built on a small number of consistently-applied rules:
+
+1. **Interface-first.** Every component that could plausibly have more than one implementation — storage, password hashing, rate limiting, ID/token generation, logging, email delivery — is defined as a Go interface before any implementation is written. Implementations are swapped by passing a different concrete type into `Config`, never by changing calling code.
+2. **One production implementation per interface, per major version.** The engine deliberately does not ship five storage backends or three hashing algorithms. `v2.0.0` ships exactly one implementation per interface (Postgres for storage, bcrypt for hashing, `crypto/rand` for token generation, UUIDv7 for IDs, an in-memory fixed-window limiter for rate limiting, console JSON for logging). Additional implementations (a second storage backend, a Redis-backed rate limiter) are additive, backward-compatible future releases — not a v2.0.0 scope item.
+3. **No storage-specific types leak into interfaces.** Every interface method takes and returns plain Go domain types (`User`, `Session`, `AuditEvent`, primitives) — never `*sql.DB`, `*pgxpool.Pool`, or any driver-specific type. This is what makes swapping a storage backend later a matter of writing one new file that satisfies the existing interface, not a rewrite of calling code.
+4. **The engine never infers transport-layer context.** Caller IP, user agent, and similar context are always explicit function parameters, supplied by whatever is calling the engine (an HTTP handler, a CLI command). See [philosophy.md](/docs/philosophy) for why this matters.
+5. **Security-critical configuration fails loudly.** A missing JWT secret, missing required stores, or invalid security parameters (e.g. a bcrypt cost outside the valid range) cause `cryden.New()` to return an error immediately. Non-security-critical tuning knobs (access token TTL, rate limit thresholds, bcrypt cost) have sensible defaults if left unset.
+
+## Package layout (the `cryden` engine repository)
+
+```
+cryden/
+├── cryden.go          Public facade — the only file most consumers need to read.
+├── config.go          Config struct, validation, defaults.
+├── engine.go           Engine struct — wires every dependency together.
+├── errors.go            Root-level sentinel errors (e.g. ErrMissingJWTSecret).
+│
+├── auth/                SignUp, Login, Logout, LogoutAll, ChangePassword,
+│                         DeleteAccount, RequestEmailChange, ConfirmEmailChange.
+│
+├── token/                JWT access token issue/verify, refresh token generation,
+│                         rotation with reuse detection.
+│
+├── session/               Session list/revoke (with ownership verification).
+│
+├── security/                Hasher (bcrypt), RateLimiter (in-memory), IDGenerator (UUIDv7).
+│
+├── store/                   Interfaces: UserStore, SessionStore, AuditStore,
+│    ├── interfaces.go         VerificationStore. Domain types: User, Session,
+│    ├── errors.go              AuditEvent, VerificationToken.
+│    ├── memory/                  Test-only in-memory implementations.
+│    └── postgres/                 Production Postgres implementations + SQL migrations.
+│
+├── logger/                  Logger interface + ConsoleJSONLogger implementation.
+│                             Distinct from AuditStore — see "Logging vs. auditing" below.
+│
+└── notify/                    EmailSender interface. Zero implementations shipped —
+                                the consuming app provides one.
+```
+
+## The layers, top to bottom
+
+1. **Public facade (`cryden.go`)** — the only entry point most consumers touch. Every function here is a thin delegation into `auth/`, `session/`, or `token/`. `cryden.New(cfg)` constructs an `*Engine`; every other public function takes that `*Engine` plus whatever arguments the operation needs.
+2. **Domain logic (`auth/`, `session/`, `token/`)** — where actual business rules live: rate-limit checks, ownership verification, lockout thresholds, reuse detection, audit event recording. These packages depend on `store/` (via interfaces), `security/`, `logger/`, and `notify/` — never on any concrete implementation.
+3. **Supporting services (`security/`, `token/`'s JWT/generator pieces, `logger/`, `notify/`)** — narrow, single-purpose interfaces with one implementation each.
+4. **Storage (`store/`)** — interfaces first, then `memory/` (tests) and `postgres/` (production) implementations.
+
+## How a request flows through the engine — Login example
+
+```
+cryden.Login(ctx, engine, email, password, callerIP, userAgent)
+  │
+  ▼
+auth.Login(...)
+  1. RateLimiter.Allow(ctx, "login:"+callerIP+":"+email)
+  2. UserStore.GetByEmail(ctx, email)
+  3. Check LockedUntil — reject if still locked
+  4. Hasher.Compare(user.PasswordHash, password) — constant-time
+     — on failure: IncrementFailedAttempts; lock account if threshold reached
+  5. On success: ResetFailedAttempts
+  6. IDGenerator.New() — new session ID (also used as the initial family_id)
+  7. TokenGenerator.New() — raw refresh token bytes (crypto/rand)
+  8. SHA-256 hash the refresh token → SessionStore.Create(...)
+  9. JWTIssuer.Issue(user.ID) — signed access token
+  10. AuditStore.Record(EventLoginSuccess, ...)
+  11. Logger.Info("login: completed", ...)
+  ▼
+return Tokens{AccessToken, RefreshToken}, nil
+```
+
+## Refresh token rotation and reuse detection
+
+This is the most security-critical flow in the engine, and it is worth understanding in detail.
+
+Every session has both an `id` and a `family_id`. On the first login, these are the same value. Each time a refresh token is used, the old session row is atomically revoked and a new one is created **with the same `family_id`** — this is the "rotation chain."
+
+```
+token.Rotate(ctx, sessions, tokenGen, ids, rawToken)
+  1. Hash the incoming raw token, look it up by hash.
+  2. Not found → ErrInvalidToken.
+  3. Found, but already revoked → THIS IS A REUSE EVENT:
+       - Revoke the ENTIRE family (every session sharing this family_id),
+         not just this one token.
+       - Return ErrTokenReused, along with the session's UserID/FamilyID
+         so the caller can record an accurate audit event.
+  4. Found, and still valid → atomically (single DB transaction):
+       - Revoke the old session row.
+       - Create a new session row with a new token hash, same family_id.
+     Return the new raw token.
+```
+
+**Why revoke the entire family, not just the reused token:** if an attacker steals a refresh token and uses it, the legitimate user's next refresh attempt (using the token that was already rotated forward) would otherwise still succeed — the attacker's use and the legitimate use would both look "valid" in isolation. By revoking every token in the family the instant reuse is detected, both the attacker's access and the legitimate user's now-compromised session die together, forcing a full re-login. This is the standard, industry-recognized pattern for refresh token theft detection.
+
+**Why the atomicity of rotation matters:** if revoking the old token and creating the new one were two separate database operations, a crash between them would leave a session family with no valid token in it at all — the user would be locked out, but at least not compromised. The Postgres implementation wraps both operations in a single database transaction (`BeginTx`/`Commit`, with `defer tx.Rollback()` as a safety net) specifically to avoid this failure mode.
+
+## Logging vs. auditing — two deliberately separate concerns
+
+CrydenSync distinguishes between two kinds of records, on purpose:
+
+- **`AuditStore`** — structured, queryable, security-relevant domain events: `signup_success`, `login_failed`, `token_reuse_detected`, `session_revoked`, `account_locked`, `password_changed`, `email_changed`, `account_deleted`, and so on. This data is written to the consuming app's own database and is meant to be queried later (e.g. "show me every failed login for this user in the last week").
+- **`Logger`** — unstructured-ish, operational, engine-internal messages: startup, errors, debug traces. Meant for a developer debugging their own deployment, piped through whatever log aggregation the consuming app already uses (stdout, in the default `ConsoleJSONLogger` implementation).
+
+These are never merged into one interface. A rate-limit rejection, for example, goes to `Logger` (operational noise), not `AuditStore` (a security event) — unless the consuming app specifically wants to promote repeated rejections into an audit-worthy anomaly, which is left as a future extension point, not built into v2.0.0.
+
+## The wrapper repositories — how they relate to the engine architecturally
+
+- **`api`** contains zero domain logic. Every HTTP handler is a thin translation: parse the request body, call the corresponding `cryden.*` function, map the result (or error) to an HTTP response. The one piece of real logic `api` owns that the engine deliberately does not is edge-level, per-IP rate limiting — a transport-layer concern the engine correctly has no opinion about.
+- **`csax`** is similarly thin. Every command either calls a `cryden.*` facade function (for anything requiring ownership checks or other domain logic, like session revocation) or a store method directly (for simple admin lookups like `UserStore.GetByEmail`, which have no facade equivalent because the engine's public API is deliberately not designed for arbitrary admin querying).
+- **`sdk-js`** contains zero server-side logic at all — it is a `fetch`-based HTTP client for `api`, with client-side conveniences (automatic token storage, automatic refresh-and-retry on an expired access token) layered on top.
+
+This "thin wrapper, logic lives in exactly one place" pattern is deliberate and consistent across the entire ecosystem — see [design-decisions.md](/docs/design-decisions) for the reasoning.

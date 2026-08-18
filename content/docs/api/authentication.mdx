@@ -1,0 +1,53 @@
+---
+title: "Authentication Flow"
+description: ""
+---
+
+## Token types
+
+- **Access token** — a short-lived (default 15 minutes) JWT. Stateless — its validity is proven entirely by cryptographic signature and expiry, never by a database lookup. Sent as `Authorization: Bearer <access_token>` on every authenticated request.
+- **Refresh token** — a long-lived, opaque (not a JWT), cryptographically random string. Used only to obtain a new token pair via `/v1/refresh`. Stored server-side only as a SHA-256 hash — the raw value is never persisted.
+
+## The full lifecycle
+
+```
+1. POST /v1/signup       → creates a user, no tokens issued
+2. POST /v1/login        → issues the first token pair (access + refresh)
+3. [access token used on every request until it expires, ~15 min]
+4. POST /v1/refresh      → rotates the refresh token, issues a new pair
+5. repeat step 3-4 as needed
+6. POST /v1/logout       → revokes the current session's refresh token
+   -- or --
+   POST /v1/logout-all   → revokes every session for the user
+```
+
+## Refresh token rotation
+
+Every time `/v1/refresh` is called successfully, the presented refresh token is invalidated and a **new** refresh token is issued in its place — this is "rotation." A client must always store the newest refresh token returned and discard the old one; using an old, already-rotated token again is treated as a security event.
+
+## Reuse detection — what happens if an old token is used again
+
+If a refresh token that was already rotated away is presented again to `/v1/refresh`, this is treated as a signal that the token may have been stolen and used by someone other than the legitimate holder (who would already be using the newer, rotated token). The engine's response:
+
+1. The entire "session family" — every token that descended from the same original login, including the current, still-valid one — is immediately revoked.
+2. The API returns `token_reused` (`401`).
+3. Any subsequent `/v1/refresh` call using *any* token from that family, including the one that had legitimately rotated forward, will also fail — the entire chain is dead.
+
+**What a client should do:** on receiving `token_reused`, clear all locally stored tokens immediately and require the user to log in again. Do not retry with a different stored token from the same session — there isn't one that will work.
+
+**Why this matters even for a legitimate user:** if this happens during entirely normal use (not an actual attack), it is very likely caused by a client bug — e.g. a race condition where two requests both attempt to refresh using the same soon-to-be-stale token concurrently. This is a real, known edge case: only one of two concurrent refresh attempts using the same token can "win"; the other will correctly see the token as already rotated and receive `token_reused`. Client SDKs (see [sdk/javascript.md](/docs/sdk/javascript)) should avoid firing concurrent refresh attempts where possible.
+
+## Silent refresh pattern (what a well-behaved client does)
+
+A client should not wait for an access token to visibly expire and show an error to the user. The recommended pattern:
+
+1. Make an authenticated request normally.
+2. If the server responds `401` with `invalid_access_token`, attempt exactly one silent refresh via `/v1/refresh`.
+3. If the refresh succeeds, retry the original request once with the new access token.
+4. If the refresh itself fails (`invalid_token` or `token_reused`), clear stored tokens and redirect to login — do not retry further.
+
+This exact pattern is implemented in `sdk-js` — see [sdk/javascript.md](/docs/sdk/javascript) for the client-side implementation.
+
+## Session identity vs. token identity
+
+A "session" (as returned by `GET /v1/sessions`) corresponds to one login — one `family_id` in the engine's internal model. As that session's refresh token rotates over time, the session's `id` in the database changes with each rotation (a new row is created), but it remains part of the same family and represents the same continuous login from the user's perspective. Revoking "a session" via `DELETE /v1/sessions/{id}` revokes whatever the *current* token in that family is — it does not require knowing the current rotated token's ID specifically, since `GET /v1/sessions` always reflects the current, live state.

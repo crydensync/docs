@@ -1,0 +1,94 @@
+---
+title: "Design Decisions"
+description: "This document records the reasoning behind specific, sometimes non-obvious choices made across the CrydenSync ecosystem. Where a decision fixed a real"
+---
+
+This document records the reasoning behind specific, sometimes non-obvious choices made across the CrydenSync ecosystem. Where a decision fixed a real, previously-identified problem, that context is included.
+
+## Why v2 is a full rewrite, not an incremental upgrade from v1
+
+An earlier, informally-built version of CrydenSync (v1) had real security issues, identified in an external review:
+
+- Session and refresh token IDs were generated from `time.Now().UnixNano()` — not unique under concurrent load, and predictable, which is unsafe for anything used as a security token.
+- The engine shipped with a hardcoded default JWT signing secret. If a deploying developer forgot to override it, authentication was effectively unprotected.
+- The rate limiter's client IP was hardcoded to `127.0.0.1` inside the engine itself, because the engine implicitly assumed an HTTP context it was never actually given — meaning rate limiting silently did not work correctly in any real deployment.
+
+v2 was built from scratch specifically to fix these at the architectural level, not patch them individually:
+
+- All IDs and tokens are generated via `crypto/rand` (raw token bytes) or UUIDv7 (IDs) — collision-resistant and, for tokens, cryptographically unpredictable.
+- `cryden.New()` refuses to construct an engine without an explicit JWT secret — there is no default to forget to override.
+- Caller IP is now a required, explicit parameter on every function that needs it (`SignUp`, `Login`) — it is structurally impossible for the engine to fall back to a hardcoded value, because it never tries to determine the IP itself.
+
+Because the public API surface, module path (`/v2`), and internal architecture are all different from v1, v2 is versioned and communicated as a full rewrite, not a patched continuation. The repository, GitHub stars, and community were kept (same organization, same repo) rather than starting over from zero, since a real user community and momentum already existed — but the code itself shares nothing with v1.
+
+## Why Go modules use semantic import versioning (`/v2` in the module path)
+
+This is a Go-specific requirement, not a stylistic choice: Go's module system requires any major version 2 or higher to include that version in the module path itself (`github.com/crydensync/cryden/v2`), and every internal import within the module must use the same path. This was applied consistently across every file in the engine when the project moved from an (unpublished, informal) v1 lineage to a public v2.
+
+## Why `v2.0.0` was chosen over `v0.1.0` for the rewrite's first tag
+
+Semantic versioning communicates a promise about API stability to consumers of a specific package identity (`github.com/crydensync/cryden`), not "how many times this project has been rebuilt." Because the repository, organization, and package identity already had published `v1.0.0`/`v1.0.1` tags that people may have starred, forked, or depended on, tagging the rewrite as `v0.1.0` under the same identity would have been misleading — it would read as a downgrade from an already-"stable" v1, when in fact it's an intentional, incompatible break from that lineage. `v2.0.0` is the version number that correctly and honestly signals "same project, deliberately incompatible break from what came before."
+
+## Why interfaces ship with exactly one implementation in v2.0.0
+
+Building multiple storage backends, multiple hashing algorithms, or multiple rate limiter implementations before any of them have been proven in production is a common failure pattern for early-stage projects: it multiplies the surface area that needs testing and maintenance before the core idea has even been validated once. CrydenSync's v1 shipped four storage backends (memory, SQLite, Postgres, MongoDB) on day one; in practice, this meant none of them were equally battle-tested, and the project's own roadmap still listed basic hardening work (like hashing refresh tokens before storing them) as "planned for a future release" even after v1.0.0 shipped. v2 deliberately inverts this: one implementation per interface, proven thoroughly (including real integration tests against a live database), with additional implementations treated as clearly-scoped, purely additive future releases.
+
+## Why refresh tokens are hashed before storage, and access tokens are not
+
+Refresh tokens are long-lived and persisted in the database — if the database were ever compromised, a stored raw refresh token would be immediately usable by an attacker. Hashing (SHA-256) before storage means a database compromise alone does not yield usable tokens. Access tokens are short-lived JWTs, never persisted anywhere (their validity is proven entirely by cryptographic signature and expiry, not by a database lookup) — there is nothing to hash, because there is nothing stored.
+
+## Why login failures for a nonexistent user and a wrong password return the identical error
+
+If a wrong-password error were distinguishable from a no-such-account error, an attacker could enumerate which email addresses have accounts on the system simply by observing which error they receive. Both cases return `auth.ErrInvalidCredentials`; the distinction (useful for the account owner's own debugging, or for legitimate operator investigation) is preserved only in the audit log's metadata field, which is not exposed to the party attempting the login.
+
+## Why account lockout is database-backed, not in-memory
+
+The engine's per-user/per-IP rate limiter (used to slow down rapid login attempts) is intentionally in-memory — fast, simple, and sufficient for its purpose of slowing down a rapid burst. Account lockout (blocking an account entirely after repeated failed attempts) is a stronger, more consequential guarantee, and an in-memory implementation would have a real gap: it resets on every process restart, and does not share state across multiple instances of a horizontally-scaled deployment — meaning an attacker could simply wait for a redeploy, or spread attempts across load-balanced instances, to bypass an in-memory lock. Lockout state (`FailedAttempts`, `LockedUntil`) is therefore persisted as real columns on the `users` table, surviving restarts and shared correctly across any number of instances pointed at the same database.
+
+## Why `ChangePassword` and `DeleteAccount` require re-entering the current password
+
+Both operations are gated behind requiring the caller to supply their current password, not merely a valid access token. If a valid-but-stolen access token alone were sufficient, an attacker with a short-lived stolen token could permanently lock the real owner out of their account (by changing the password) or destroy their account entirely — actions far more consequential than what a leaked access token should be able to accomplish on its own. Requiring the current password re-establishes strong proof of ownership immediately before an irreversible or highly consequential action.
+
+## Why `ChangePassword` revokes every session, including the one making the request
+
+If a password was changed because it may have leaked, any session an attacker already established with the old credentials must not survive the change — otherwise the password change provides a false sense of security while an active, already-established attacker session continues unaffected. The tradeoff is that the legitimate user is also logged out and must log in again with the new password; this is treated as the correct, safer default rather than a UX cost to avoid.
+
+## Why email changes require confirmation before taking effect
+
+`RequestEmailChange` does not update the user's email immediately. It sends a verification token to the *new* address and only applies the change when `ConfirmEmailChange` is called with a valid, unexpired, single-use token. If the change applied immediately, anyone with a stolen access token could redirect an account's email to an address they control (setting up account recovery in their own favor) without ever needing to prove they control that new address.
+
+## Why `ConfirmEmailChange` requires no authentication
+
+The user confirming an email change may be doing so by clicking a link in their email client, where they have no active browser session or access token. The verification token itself — long, cryptographically random, single-use, and time-limited — is the proof of authorization for this specific action. This mirrors how password-reset-via-email flows work across the industry.
+
+## Why the engine defines `Logger` and `EmailSender` as interfaces with zero default implementations that talk to a network
+
+This is a direct, structural enforcement of the "zero telemetry" philosophy (see [philosophy.md](/docs/philosophy)). If the engine shipped a default `EmailSender` that called some third-party email API, or a default `Logger` that shipped logs to a hosted log aggregation service, "zero telemetry" would be a claim, not a guarantee. By defining these as interfaces the engine cannot use without the consuming application explicitly providing an implementation, the zero-telemetry property is true by construction, not by policy.
+
+## Why the HTTP API (`api`) uses a `{"data": ...}` / `{"error": {"code": ..., "message": ...}}` response envelope
+
+A consistent envelope lets every SDK and frontend write error-handling logic once, generically, rather than per-endpoint. The `code` field is a stable string (e.g. `invalid_credentials`, `account_locked`, `token_reused`) that client code branches on programmatically; `message` is a human-readable string that must never be parsed or relied upon by code, since its exact wording is not part of the contract. Every engine sentinel error is mapped to exactly one `(HTTP status, code)` pair in one file (`httpapi/errors.go`), so adding a new engine error to the contract is a one-line change that automatically benefits every handler.
+
+## Why the HTTP API includes edge (per-IP) rate limiting in addition to the engine's own per-user rate limiting
+
+The engine's built-in rate limiting is scoped to specific, sensitive operations (login, signup) and keyed by a combination the engine understands (IP + email). It has no opinion about, and does not protect, the API surface as a whole from being hammered generally (e.g. a client repeatedly calling `/v1/health` or `/v1/sessions`). This is legitimately an HTTP-layer concern, not something the framework-agnostic engine should own — so `api` adds its own coarse, per-IP, whole-surface rate limiter on top, using the same fixed-window, in-memory approach as the engine's own limiter (with the same single-instance limitation, documented plainly rather than presented as production-scale-ready).
+
+## Why session listings never include the session's token hash
+
+Early in the HTTP API's development, a session-listing endpoint was found (before being shipped) to be serializing the full `store.Session` struct directly to JSON — which includes `TokenHash`, the SHA-256 hash of the refresh token. While a hash is not directly usable the way a raw token would be, there is no legitimate reason for a client to receive it, and exposing internal implementation details unnecessarily is avoided on principle. Every session-listing response (in both `typebook`'s backend and the official `api` repository) maps to an explicit response type that excludes `TokenHash` and `FamilyID`, rather than passing the storage-layer struct through directly.
+
+## Why CLI (`csax`) v1 makes zero changes to the engine
+
+The CLI was deliberately scoped to work entirely with the engine's already-existing public functions and store methods. This was a conscious sequencing decision: building a CLI against a stable, already-tagged engine version avoids the CLI needing to track engine changes made specifically to support it, and confirms that the engine's existing public surface is sufficient for real administrative tooling — which is itself a useful validation of the engine's design. The one capability explicitly deferred as a result (`csax users list` — enumerating all users) was left out rather than motivating an engine change, and is documented as a known, deliberate scope boundary for a future release.
+
+## Why token storage in `sdk-js` is a pluggable interface, not hardcoded to `localStorage`
+
+A reference implementation (`typebook`'s hand-written API client) hardcoded `localStorage`, which is reasonable for one specific browser-only app but wrong for a general-purpose SDK: `localStorage` does not exist in Node.js, React Native, or server-side rendering contexts, and some browser-based consumers may have legitimate reasons to prefer `sessionStorage` or an in-memory-only strategy for security reasons. `sdk-js` defines a small `StorageAdapter` interface (`get`/`set`/`remove`), defaults to `localStorage` when running in a browser and an in-memory `Map` otherwise, and allows any consumer to supply their own implementation.
+
+## Why AI-assisted features (natural language queries, automated security auditing) are designed to never take unsupervised action
+
+An early concept for CrydenSync included AI-driven features that would automatically act on findings — for example, automatically locking accounts identified as suspicious, or automatically regenerating a JWT secret found to be insecure. This was deliberately redesigned before any implementation began: automated, unsupervised action based on model inference in a production authentication system carries real risk of false positives (locking out legitimate users, including via a scenario where an attacker deliberately triggers detection logic against a target as a denial-of-service vector) and of severe, surprising side effects (regenerating a JWT secret instantly invalidates every existing session across an entire production deployment, with no warning). The design principle adopted instead: AI-assisted features detect and surface findings; a human explicitly confirms any resulting action. This applies to every planned AI feature, not just the two examples above.
+
+## Why AI features (when built) will use a structured intent layer, not raw LLM-generated SQL
+
+A natural-language query feature ("show me users from Lagos") could naively be implemented by having a language model generate SQL directly and executing it. This was explicitly rejected as a design approach: it is a prompt-injection and correctness risk equivalent in kind to classic SQL injection, just with a different origin for the injected content. The planned design instead has the model translate natural language into a strictly-typed, allowlisted `QueryIntent` structure (an entity name, filters, and an aggregation type, all validated against known-safe fields) — the model's output is treated as untrusted data to validate, never as code to execute directly. The database credential used for this feature is also planned to be a read-only role at the Postgres level, as defense in depth beyond the application-level validation.

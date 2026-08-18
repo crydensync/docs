@@ -1,0 +1,70 @@
+---
+title: "Roadmap"
+description: "This roadmap distinguishes what is **shipped and verified**, what is **built but not yet independently verified in production**, and what is **planned"
+---
+
+This roadmap distinguishes what is **shipped and verified**, what is **built but not yet independently verified in production**, and what is **planned but not yet built.** Version numbers follow standard semantic versioning: additive, non-breaking features are minor releases (`v2.1.0`, `v2.2.0`, ...); a genuinely breaking change to the engine's public API would be the next major release (`v3.0.0`), which is not currently planned.
+
+## Shipped — `cryden` v2.0.0
+
+- Signup, login, logout (single session and all sessions)
+- JWT access tokens (stateless, short-lived) with algorithm-confusion attack rejection
+- Opaque refresh tokens (SHA-256 hashed at rest) with rotation and full reuse-detection (entire session family revoked on detected reuse)
+- Session listing and revocation, with ownership verification
+- Database-backed account lockout after repeated failed login attempts
+- Change password (requires current password, revokes all sessions on success)
+- Delete account (requires current password)
+- Email change with confirmation-before-effect (via a single-use, expiring verification token)
+- Rate limiting (per-user/IP, on login and signup)
+- Structured audit logging, separate from operational logging
+- One production storage backend: Postgres, with real integration tests run against a live database
+- Automated test suite covering unit tests per package and Postgres integration tests, including the reuse-detection and lockout-persistence properties specifically
+
+## Shipped — `api` (HTTP wrapper)
+
+- Full REST surface over every engine capability listed above, under a versioned `/v1` prefix
+- Consistent `{data}`/`{error: {code, message}}` response envelope
+- Edge (per-IP) rate limiting, layered on top of the engine's own rate limiting
+- A working, automated smoke test that runs the entire flow (including reuse detection) against a live server over real HTTP
+- CI that builds, vets, applies migrations against a fresh Postgres instance, starts a real server, and runs the smoke test against it on every push
+
+## Shipped — `csax` (admin CLI)
+
+- `config init`, `migrate up/down/status`, `users get/unlock`, `sessions list/revoke/revoke-all`, `audit tail`, `health`, `version`
+- Zero engine changes required — built entirely on the already-published public engine API and existing store methods
+
+## Shipped — `sdk-js` (JavaScript/TypeScript SDK)
+
+- Full client for every `api` endpoint
+- Automatic silent token refresh and one-retry on an expired access token
+- Pluggable token storage (defaults to `localStorage` in a browser, in-memory elsewhere)
+- Typed error codes (`CrydenError.code`) matching the API's error contract exactly
+- Verified against a real, live `api` instance (Postgres → engine → API → the actual built npm package), not just unit-tested in isolation
+
+## Shipped — `typebook` (reference application)
+
+A full-stack Google Keep-style notes app (Go/`net/http` backend, React/Vite frontend) built specifically to exercise every CrydenSync feature in a realistic setting — session management, password change forcing logout, email change round-tripping, account deletion cascading correctly. Serves as both a proof-of-concept and a template for a real production app.
+
+## Not yet independently verified
+
+- The engine's Postgres implementation and the API's smoke test have been run against local test databases and a personal Supabase development project. They have not yet been run under real, sustained production load, nor under any external security audit.
+- The `api` repository's edge rate limiter default threshold is a reasonable starting estimate, not a value derived from observed real-world traffic.
+
+## Planned — near-term (v2.x, additive, non-breaking)
+
+- **OAuth (Google, GitHub) identity linking.** The engine-side primitive (`LoginWithOAuth`, an `OAuthStore` interface for linking external identities to a `User`) is designed but not yet built. The actual OAuth redirect/callback exchange is inherently HTTP-shaped and will live entirely in the `api` repository, calling one engine function once a provider identity has been confirmed — the engine itself will never perform an HTTP redirect or know about a specific provider. A specific, deliberate decision point not yet resolved: whether an OAuth login matching an existing password-based account's email should auto-link the accounts, or require explicit confirmation via the existing password login first (the latter is the currently-favored default, for account-takeover-resistance reasons).
+- **AI-assisted admin and query features**, exposed through `csax ai ...` subcommands: natural-language querying of user/session/audit data (via a structured, allowlisted intent layer — never raw LLM-generated SQL — see [design-decisions.md](/docs/design-decisions)), and natural-language-assisted security configuration auditing. Every action-taking feature (locking an account, applying a suggested fix) will require explicit human confirmation; nothing acts unsupervised. The `LLMProvider` interface will follow the same pattern as `Logger`/`EmailSender`: the engine defines the interface, the consuming application supplies its own provider and API key, and no default implementation calls any LLM provider on its own.
+- **Python SDK**, mirroring `sdk-js`'s design (thin HTTP client, typed errors, pluggable token storage) once the JavaScript SDK's shape has been validated by real use.
+- **React-specific SDK layer** (`useCryden()` hooks, a `<CrydenProvider>` context) built on top of the base JavaScript SDK, once the base SDK has seen real-world use.
+
+## Planned — later, deliberately deferred
+
+- **A second storage backend** (most likely MongoDB or SQLite). SQLite specifically has come up as a way to support local-first/offline-capable deployments, in keeping with the "own your users" philosophy — but is treated as real, deliberate engine work to scope properly, not a quick fix for any particular development environment's limitations.
+- **Package distribution for `csax` via `npm`/`pip`** (pre-built binaries with thin wrapper packages, the same pattern used by tools like `esbuild` or `ripgrep`), so non-Go developers can install the CLI without a Go toolchain. Deferred until the CLI's command surface has stabilized through real use — packaging something still being reshaped is wasted effort.
+- **A public documentation website.** This documentation set is the content that would populate it; the site itself is deferred until the API and at least one SDK are both live, so the site documents a real, complete ecosystem rather than describing pieces that don't exist yet.
+- **A hosted, multi-tenant CrydenSync Cloud offering.** Explicitly out of scope for the foreseeable roadmap and would represent a significant philosophical and architectural departure (see [philosophy.md](/docs/philosophy)) requiring its own deliberate decision, not an incremental extension of the current self-hosted model.
+- **Additional advanced authentication methods**: MFA/TOTP, magic links, SMS OTP, WebAuthn/passkeys, SAML, SCIM. These were present in early conceptual planning but deliberately excluded from v2's scope in favor of depth on the core flows first.
+
+## Philosophy behind this roadmap's sequencing
+
+Every addition to this roadmap follows the same discipline applied throughout v2's development: define the interface only once there is a real, concrete consumer ready to use it; prove each layer works end-to-end (including real integration tests, not just unit tests in isolation) before building the next layer on top of it; and prefer a smaller, honestly-scoped, well-tested surface over a larger one that repeats the mistakes that made a full rewrite necessary in the first place.
