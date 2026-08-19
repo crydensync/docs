@@ -48,13 +48,22 @@ function loadAllChunks(): DocChunk[] {
   return chunks;
 }
 
-// Common English words plus terms that appear in nearly every doc
-// (the product name, generic connector words) are excluded from
-// scoring — otherwise a query like "how do I use the CLI?" lets
-// "the"/"how"/"use" (which appear dozens of times in every long page)
-// drown out the one word that actually matters ("cli"), causing
-// completely unrelated pages to outrank the actually relevant one
-// purely because they're longer and contain more common words.
+// Common English words are excluded from scoring — otherwise a query like
+// "how do I use the CLI?" lets "the"/"how"/"use" (which appear dozens of
+// times in every long page) drown out the one word that actually matters
+// ("cli"), causing completely unrelated pages to outrank the actually
+// relevant one purely because they're longer and contain more common words.
+//
+// NOTE: "crydensync" used to be excluded here too (it appears in nearly
+// every doc's title/description), but that had a worse side effect: a
+// question like "What is CrydenSync?" reduces to zero scoreable words once
+// "what", "is", and "crydensync" are all filtered out — every chunk scores
+// 0, gets dropped by the score > 0 filter below, and the model receives no
+// context at all, so it correctly (but unhelpfully) says it doesn't have
+// enough information. Leaving "crydensync" scoreable means broad questions
+// about the product itself still retrieve something (the docs root page,
+// which mentions it most), while more specific terms in the same query
+// still dominate the ranking as intended.
 const STOPWORDS = new Set([
   "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
   "how", "what", "why", "when", "where", "who", "which", "does", "do",
@@ -62,7 +71,6 @@ const STOPWORDS = new Set([
   "of", "to", "in", "on", "for", "with", "at", "by", "from", "up",
   "about", "into", "over", "after", "use", "using", "used", "get",
   "this", "that", "these", "those", "it", "its", "as", "not",
-  "crydensync", // appears in nearly every doc's title/description
 ]);
 
 function score(chunk: DocChunk, queryWords: string[]): number {
