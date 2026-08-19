@@ -19,7 +19,7 @@ A Go library (`github.com/crydensync/cryden/v2`) providing signup, login, sessio
 | `api` | A self-hosted HTTP wrapper around the engine | Non-Go developers, or Go developers wanting a REST interface |
 | `csax` | An admin CLI for managing a CrydenSync deployment | Developers/operators — never end users of an app built on CrydenSync |
 | `sdk-js` | A JavaScript/TypeScript client for the `api` HTTP layer | Frontend and Node developers |
-| `typebook` | A reference full-stack app (Google Keep-style notes) built on CrydenSync | Proof that the whole stack works end-to-end in a real app |
+| `typebook` | A reference full-stack app (Google Keep-style notes) built on CrydenSync — [live demo](https://typebook.vercel.app) | Proof that the whole stack works end-to-end in a real app |
 
 ## How the pieces relate
 
@@ -35,6 +35,7 @@ The engine (`cryden`) is the only place authentication *logic* lives. Every othe
 ## Where to go next
 
 - **New to CrydenSync?** Start with [Philosophy](/docs/philosophy), then [Architecture](/docs/architecture).
+- **Want to see it running for real first?** Try [typebook](https://typebook.vercel.app), a live notes app built entirely on CrydenSync v2 — sign up, log in, check active sessions, change your password, all of it.
 - **Want to build something with it?** Go to [guide/installation.md](/docs/guide/installation) and [guide/quick-start.md](/docs/guide/quick-start).
 - **Building an HTTP-facing app?** See [api/index.md](/docs/api).
 - **Managing a deployment?** See [cli/index.md](/docs/cli).

@@ -49,6 +49,14 @@ export default function HomePage() {
         >
           Get Started →
         </Link>
+        <a
+          href="https://typebook-pi.vercel.app"
+          target="_blank"
+          rel="noreferrer"
+          className="rounded-lg border border-fd-border px-5 py-2.5 text-sm font-medium text-fd-foreground hover:bg-fd-accent"
+        >
+          🚀 Live Demo
+        </a>
         <Link
           href="/ai"
           className="rounded-lg border border-fd-border px-5 py-2.5 text-sm font-medium text-fd-foreground hover:bg-fd-accent"
@@ -83,7 +91,7 @@ export default function HomePage() {
         </a>
         <span className="text-fd-border">·</span>
         <a
-          href="https://chat.whatsapp.com/IkPWOYlnr4DI6zTzEC0g8m?s=cl&p=a&ilr=1"
+          href="https://chat.whatsapp.com/IkPWOYlnr4DI6zTzEC0g8"
           target="_blank"
           rel="noreferrer"
           className="hover:text-fd-foreground"

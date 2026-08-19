@@ -12,7 +12,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
           <Link href="/docs">Docs</Link>
           <a href="https://discord.gg/xUCYcDBAWx" target="_blank" rel="noreferrer">Discord</a>
           <a
-            href="https://chat.whatsapp.com/IkPWOYlnr4DI6zTzEC0g8m?s=cl&p=a&ilr=1"
+            href="https://chat.whatsapp.com/IkPWOYlnr4DI6zTzEC0g8m"
             target="_blank"
             rel="noreferrer"
           >
